@@ -1,22 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Topic-Centric SRS Frontend
+
+A minimalistic Next.js frontend for the Topic-Centric Spaced Repetition System.
+
+## Features
+
+- **Authentication**: Supabase-powered sign up/sign in with automatic profile creation
+- **Deck Management**: Create, view, and delete flashcard decks
+- **Topic Organization**: Organize cards into topics with SRS parameters
+- **Card Creation**: Support for Q&A with hints and Multiple Choice cards
+- **Review System**: Intelligent review interface with weighted card sampling
+- **Markdown Support**: Rich text formatting in all card content
+- **Responsive Design**: Clean, minimalistic UI using shadcn/ui components
+
+## Tech Stack
+
+- **Next.js 14** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **shadcn/ui** for UI components
+- **Supabase** for authentication
+- **React Markdown** for rendering card content
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ and npm
+- Running FastAPI backend at `http://localhost:8000`
+- Supabase project with authentication enabled
+
+### Installation
+
+1. Install dependencies (if not already done):
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Configure environment variables:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Edit `.env.local` with your credentials:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_SUPABASE_URL=https://mlubbzyctgiafjbiqyfo.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key
+```
+
+3. Run the development server:
+```bash
+npm run dev
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
