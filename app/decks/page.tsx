@@ -21,7 +21,7 @@ export default function DecksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', prompt: '' });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -50,16 +50,22 @@ export default function DecksPage() {
 
   const handleCreateDeck = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.prompt.trim()) {
+      setError('Deck prompt is required');
+      return;
+    }
+    
     setSubmitting(true);
     setError('');
 
     try {
       await apiClient.createDeck({
         name: formData.name,
-        description: formData.description || undefined,
+        prompt: formData.prompt,
       });
       setDialogOpen(false);
-      setFormData({ name: '', description: '' });
+      setFormData({ name: '', prompt: '' });
       fetchDecks();
     } catch (err: any) {
       setError(err.message || 'Failed to create deck');
@@ -122,12 +128,13 @@ export default function DecksPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description (optional)</Label>
+                  <Label htmlFor="prompt">Deck Prompt</Label>
                   <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe your deck..."
+                    id="prompt"
+                    value={formData.prompt}
+                    onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                    placeholder="Enter the prompt that defines this deck..."
+                    required
                     disabled={submitting}
                   />
                 </div>
@@ -166,8 +173,8 @@ export default function DecksPage() {
             <Card key={deck.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle>{deck.name}</CardTitle>
-                {deck.description && (
-                  <CardDescription>{deck.description}</CardDescription>
+                {deck.prompt && (
+                  <CardDescription>{deck.prompt}</CardDescription>
                 )}
               </CardHeader>
               <CardContent className="space-y-2">

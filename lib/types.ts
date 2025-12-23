@@ -3,7 +3,7 @@
 export interface Deck {
   id: string;
   name: string;
-  description: string | null;
+  prompt: string;
   user_id: string;
   created_at: string | null;
   updated_at: string | null;
@@ -72,12 +72,12 @@ export interface ReviewResponse {
 
 export interface CreateDeckRequest {
   name: string;
-  description?: string;
+  prompt: string;
 }
 
 export interface UpdateDeckRequest {
   name?: string;
-  description?: string;
+  prompt?: string;
 }
 
 export interface CreateTopicRequest {

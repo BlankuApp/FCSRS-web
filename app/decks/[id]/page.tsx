@@ -128,8 +128,8 @@ export default function DeckDetailPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">{deck?.name || 'Deck'}</h1>
-          {deck?.description && (
-            <p className="text-muted-foreground">{deck.description}</p>
+          {deck?.prompt && (
+            <p className="text-muted-foreground">{deck.prompt}</p>
           )}
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
