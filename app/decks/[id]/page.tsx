@@ -13,6 +13,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import EmptyState from '@/components/empty-state';
 
+interface GeneratedCard {
+  card_type: 'qa_hint' | 'multiple_choice';
+  question: string;
+  answer?: string;
+  hint?: string;
+  choices?: string[];
+  correct_index?: number;
+}
+
 export default function DeckDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -23,9 +32,13 @@ export default function DeckDetailPage() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '' });
-  const [submitting, setSubmitting] = useState(false);
+  const [topicName, setTopicName] = useState('');
+  const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -55,23 +68,79 @@ export default function DeckDetailPage() {
     }
   };
 
-  const handleCreateTopic = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const handleGenerateCards = async () => {
+    if (!topicName.trim() || !deck) return;
+
+    setIsGenerating(true);
+    setError('');
+    setGeneratedCards([]);
+
+    try {
+      const response = await apiClient.generateCards(deck.prompt, topicName);
+      setGeneratedCards(response.cards);
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate cards');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRemoveCard = (index: number) => {
+    setGeneratedCards(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddTopic = async () => {
+    if (!topicName.trim() || generatedCards.length === 0) return;
+
+    setIsAdding(true);
     setError('');
 
     try {
-      await apiClient.createTopic({
+      // Create the topic first
+      const topic = await apiClient.createTopic({
         deck_id: deckId,
-        name: formData.name,
+        name: topicName,
       });
+
+      // Add all generated cards to the topic
+      for (const card of generatedCards) {
+        if (card.card_type === 'qa_hint') {
+          await apiClient.createCard({
+            topic_id: topic.id,
+            card_type: 'qa_hint',
+            question: card.question,
+            answer: card.answer || '',
+            hint: card.hint,
+          });
+        } else if (card.card_type === 'multiple_choice') {
+          await apiClient.createCard({
+            topic_id: topic.id,
+            card_type: 'multiple_choice',
+            question: card.question,
+            choices: card.choices || [],
+            correct_index: card.correct_index || 0,
+          });
+        }
+      }
+
+      // Reset dialog state and refresh
       setDialogOpen(false);
-      setFormData({ name: '' });
+      setTopicName('');
+      setGeneratedCards([]);
       fetchDeckAndTopics();
     } catch (err: any) {
-      setError(err.message || 'Failed to create topic');
+      setError(err.message || 'Failed to add topic');
     } finally {
-      setSubmitting(false);
+      setIsAdding(false);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setTopicName('');
+      setGeneratedCards([]);
+      setError('');
     }
   };
 
@@ -132,41 +201,116 @@ export default function DeckDetailPage() {
             <p className="text-muted-foreground">{deck.prompt}</p>
           )}
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button>Create Topic</Button>
           </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={handleCreateTopic}>
-              <DialogHeader>
-                <DialogTitle>Create New Topic</DialogTitle>
-                <DialogDescription>Add a new topic to this deck</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Topic Name</Label>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Topic</DialogTitle>
+              <DialogDescription>
+                Enter a topic name and generate AI-powered flashcards
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Topic Name Input */}
+              <div className="space-y-2">
+                <Label htmlFor="topicName">Topic Name</Label>
+                <div className="flex gap-2">
                   <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    id="topicName"
+                    value={topicName}
+                    onChange={(e) => setTopicName(e.target.value)}
                     placeholder="e.g., Present Tense Verbs"
-                    required
                     maxLength={255}
-                    disabled={submitting}
+                    disabled={isGenerating || isAdding}
                   />
+                  <Button
+                    type="button"
+                    onClick={handleGenerateCards}
+                    disabled={!topicName.trim() || isGenerating || isAdding}
+                  >
+                    {isGenerating ? 'Generating...' : 'Generate Cards'}
+                  </Button>
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create Topic'}
-                </Button>
-              </DialogFooter>
-            </form>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Generated Cards Preview */}
+              {generatedCards.length > 0 && (
+                <div className="space-y-3">
+                  <Label>Generated Cards ({generatedCards.length})</Label>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-3">
+                    {generatedCards.map((card, index) => (
+                      <div
+                        key={index}
+                        className="bg-muted p-3 rounded-md relative"
+                      >
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveCard(index)}
+                        >
+                          ×
+                        </Button>
+                        <div className="pr-6">
+                          <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary/10 text-primary mb-2">
+                            {card.card_type === 'qa_hint' ? 'Q&A' : 'Multiple Choice'}
+                          </span>
+                          <p className="font-medium text-sm">{card.question}</p>
+                          {card.card_type === 'qa_hint' ? (
+                            <div className="mt-1 text-sm text-muted-foreground">
+                              <p><strong>Answer:</strong> {card.answer}</p>
+                              {card.hint && <p><strong>Hint:</strong> {card.hint}</p>}
+                            </div>
+                          ) : (
+                            <div className="mt-1 text-sm text-muted-foreground">
+                              <p><strong>Choices:</strong></p>
+                              <ul className="list-disc list-inside">
+                                {card.choices?.map((choice, i) => (
+                                  <li key={i} className={i === card.correct_index ? 'text-green-600 font-medium' : ''}>
+                                    {choice} {i === card.correct_index && '✓'}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => handleDialogClose(false)}
+                disabled={isAdding}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddTopic}
+                disabled={!topicName.trim() || generatedCards.length === 0 || isAdding}
+              >
+                {isAdding ? 'Adding...' : `Add Topic with ${generatedCards.length} Cards`}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      {error && (
+      {error && !dialogOpen && (
         <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4">
           {error}
         </div>

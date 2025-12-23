@@ -201,6 +201,34 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // AI Card Generation
+  async generateCards(
+    deckPrompt: string,
+    topicName: string
+  ): Promise<{ cards: Array<{
+    card_type: 'qa_hint' | 'multiple_choice';
+    question: string;
+    answer?: string;
+    hint?: string;
+    choices?: string[];
+    correct_index?: number;
+  }> }> {
+    const response = await fetch('/api/generate-cards', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ deckPrompt, topicName }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.error || 'Failed to generate cards');
+    }
+
+    return response.json();
+  }
 }
 
 export const apiClient = new ApiClient();
