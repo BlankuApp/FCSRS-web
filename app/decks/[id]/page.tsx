@@ -310,7 +310,7 @@ export default function DeckDetailPage() {
                           <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary/10 text-primary mb-2">
                             {card.card_type === 'qa_hint' ? 'Q&A' : 'Multiple Choice'}
                           </span>
-                          <div className="font-medium text-sm">
+                          <div className="text-sm">
                             <MarkdownRenderer content={card.question} />
                           </div>
                           {card.card_type === 'qa_hint' ? (
