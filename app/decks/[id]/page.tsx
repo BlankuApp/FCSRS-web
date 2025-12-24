@@ -8,10 +8,14 @@ import { apiClient } from '@/lib/api-client';
 import { Deck, Topic } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 import EmptyState from '@/components/empty-state';
+import MarkdownRenderer from '@/components/markdown-renderer';
 
 interface GeneratedCard {
   card_type: 'qa_hint' | 'multiple_choice';
@@ -33,12 +37,18 @@ export default function DeckDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Dialog state
-  const [dialogOpen, setDialogOpen] = useState(false);
+  // Create Topic state
   const [topicName, setTopicName] = useState('');
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+
+  // Prompt editing state
+  const [editedPrompt, setEditedPrompt] = useState('');
+  const [isUpdatingPrompt, setIsUpdatingPrompt] = useState(false);
+
+  // Success message state
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -51,6 +61,12 @@ export default function DeckDetailPage() {
       fetchDeckAndTopics();
     }
   }, [user, deckId]);
+
+  useEffect(() => {
+    if (deck) {
+      setEditedPrompt(deck.prompt);
+    }
+  }, [deck]);
 
   const fetchDeckAndTopics = async () => {
     try {
@@ -121,10 +137,11 @@ export default function DeckDetailPage() {
         }
       }
 
-      // Reset dialog state and refresh
-      setDialogOpen(false);
+      // Reset form and refresh
       setTopicName('');
       setGeneratedCards([]);
+      setSuccessMessage(`Topic "${topic.name}" created with ${generatedCards.length} cards!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
       fetchDeckAndTopics();
     } catch (err: any) {
       setError(err.message || 'Failed to add topic');
@@ -133,12 +150,29 @@ export default function DeckDetailPage() {
     }
   };
 
-  const handleDialogClose = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      setTopicName('');
-      setGeneratedCards([]);
-      setError('');
+  const handleUpdatePrompt = async () => {
+    if (!editedPrompt.trim()) {
+      setError('Prompt cannot be empty');
+      return;
+    }
+
+    if (editedPrompt.length > 2000) {
+      setError('Prompt must be 2000 characters or less');
+      return;
+    }
+
+    setIsUpdatingPrompt(true);
+    setError('');
+
+    try {
+      await apiClient.updateDeck(deckId, { prompt: editedPrompt });
+      setSuccessMessage('Prompt updated successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      await fetchDeckAndTopics();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update prompt');
+    } finally {
+      setIsUpdatingPrompt(false);
     }
   };
 
@@ -192,43 +226,37 @@ export default function DeckDetailPage() {
         </Button>
       </div>
 
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">{deck?.name || 'Deck'}</h1>
-          {deck?.prompt && (
-            <p className="text-muted-foreground">{deck.prompt}</p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {/* Deck-level Review Button */}
-          {topics.length > 0 && (() => {
-            const dueTopics = topics.filter(t => new Date(t.next_review) <= new Date());
-            return dueTopics.length > 0 ? (
-              <Button asChild>
-                <Link href={`/review/${deckId}`}>
-                  Review Deck ({dueTopics.length})
-                </Link>
-              </Button>
-            ) : (
-              <Button disabled>
-                No Reviews Due
-              </Button>
-            );
-          })()}
-          <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
-            <DialogTrigger asChild>
-              <Button variant="outline">Create Topic</Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Topic</DialogTitle>
-              <DialogDescription>
-                Enter a topic name and generate AI-powered flashcards
-              </DialogDescription>
-            </DialogHeader>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">{deck?.name || 'Deck'}</h1>
+      </div>
 
-            <div className="space-y-4 py-4">
-              {/* Topic Name Input */}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <p>Loading...</p>
+        </div>
+      ) : (
+        <Tabs defaultValue="create" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="create">Create Topic</TabsTrigger>
+            <TabsTrigger value="prompt">Prompt</TabsTrigger>
+            <TabsTrigger value="topics">Topics</TabsTrigger>
+          </TabsList>
+
+          {/* Create Topic Tab */}
+          <TabsContent value="create" className="space-y-4">
+            {successMessage && (
+              <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                <AlertDescription className="text-green-800 dark:text-green-200">{successMessage}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="topicName">Topic Name</Label>
                 <div className="flex gap-2">
@@ -243,25 +271,28 @@ export default function DeckDetailPage() {
                   <Button
                     type="button"
                     onClick={handleGenerateCards}
-                    disabled={!topicName.trim() || isGenerating || isAdding}
+                    disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt}
                   >
-                    {isGenerating ? 'Generating...' : 'Generate Cards'}
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate Cards'
+                    )}
                   </Button>
                 </div>
+                {!deck?.prompt && (
+                  <p className="text-sm text-muted-foreground">Please add a prompt in the Prompt tab first</p>
+                )}
               </div>
-
-              {/* Error Display */}
-              {error && (
-                <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
-                  {error}
-                </div>
-              )}
 
               {/* Generated Cards Preview */}
               {generatedCards.length > 0 && (
                 <div className="space-y-3">
                   <Label>Generated Cards ({generatedCards.length})</Label>
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto border rounded-md p-3">
+                  <div className="space-y-2 overflow-y-auto border rounded-md p-3">
                     {generatedCards.map((card, index) => (
                       <div
                         key={index}
@@ -279,11 +310,21 @@ export default function DeckDetailPage() {
                           <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary/10 text-primary mb-2">
                             {card.card_type === 'qa_hint' ? 'Q&A' : 'Multiple Choice'}
                           </span>
-                          <p className="font-medium text-sm">{card.question}</p>
+                          <div className="font-medium text-sm">
+                            <MarkdownRenderer content={card.question} />
+                          </div>
                           {card.card_type === 'qa_hint' ? (
-                            <div className="mt-1 text-sm text-muted-foreground">
-                              <p><strong>Answer:</strong> {card.answer}</p>
-                              {card.hint && <p><strong>Hint:</strong> {card.hint}</p>}
+                            <div className="mt-1 text-sm text-muted-foreground space-y-1">
+                              <div>
+                                <strong>Answer:</strong>
+                                <MarkdownRenderer content={card.answer || ''} />
+                              </div>
+                              {card.hint && (
+                                <div>
+                                  <strong>Hint:</strong>
+                                  <MarkdownRenderer content={card.hint} />
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="mt-1 text-sm text-muted-foreground">
@@ -301,73 +342,132 @@ export default function DeckDetailPage() {
                       </div>
                     ))}
                   </div>
+
+                  <Button
+                    onClick={handleAddTopic}
+                    disabled={!topicName.trim() || generatedCards.length === 0 || isAdding}
+                    className="w-full"
+                  >
+                    {isAdding ? 'Adding...' : `Add Topic with ${generatedCards.length} Cards`}
+                  </Button>
                 </div>
               )}
             </div>
+          </TabsContent>
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => handleDialogClose(false)}
-                disabled={isAdding}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAddTopic}
-                disabled={!topicName.trim() || generatedCards.length === 0 || isAdding}
-              >
-                {isAdding ? 'Adding...' : `Add Topic with ${generatedCards.length} Cards`}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        </div>
-      </div>
+          {/* Prompt Tab */}
+          <TabsContent value="prompt" className="space-y-4">
+            {successMessage && (
+              <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                <AlertDescription className="text-green-800 dark:text-green-200">{successMessage}</AlertDescription>
+              </Alert>
+            )}
 
-      {error && !dialogOpen && (
-        <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4">
-          {error}
-        </div>
-      )}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="prompt">Deck Prompt</Label>
+                <p className="text-sm text-muted-foreground">
+                  This prompt will be used to generate flashcards for topics in this deck.
+                </p>
+                <Textarea
+                  id="prompt"
+                  value={editedPrompt}
+                  onChange={(e) => setEditedPrompt(e.target.value)}
+                  placeholder="e.g., You are a Spanish language tutor. Generate flashcards to help students learn..."
+                  className="text-sm min-h-[200px]"
+                  maxLength={2000}
+                  disabled={isUpdatingPrompt}
+                />
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-muted-foreground">
+                    {editedPrompt?.length || 0}/2000 characters
+                  </p>
+                  {!editedPrompt?.trim() && (
+                    <p className="text-xs text-destructive">Prompt cannot be empty</p>
+                  )}
+                </div>
+              </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <p>Loading topics...</p>
-        </div>
-      ) : topics.length === 0 ? (
-        <EmptyState
-          title="No topics yet"
-          description="Create your first topic to add flashcards"
-          action={
-            <Button onClick={() => setDialogOpen(true)}>Create Your First Topic</Button>
-          }
-        />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {topics.map((topic) => (
-            <Card key={topic.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle>{topic.name}</CardTitle>
-                <CardDescription>
-                  Difficulty: {topic.difficulty.toFixed(1)} | {formatNextReview(topic.next_review)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button asChild className="w-full">
-                  <Link href={`/topics/${topic.id}`}>View Cards</Link>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleUpdatePrompt}
+                  disabled={
+                    !editedPrompt?.trim() ||
+                    editedPrompt === deck?.prompt ||
+                    editedPrompt.length > 2000 ||
+                    isUpdatingPrompt
+                  }
+                >
+                  {isUpdatingPrompt ? 'Saving...' : 'Save Prompt'}
                 </Button>
                 <Button
-                  variant="destructive"
-                  className="w-full"
-                  onClick={() => handleDeleteTopic(topic.id)}
+                  variant="outline"
+                  onClick={() => setEditedPrompt(deck?.prompt || '')}
+                  disabled={isUpdatingPrompt || editedPrompt === deck?.prompt}
                 >
-                  Delete
+                  Cancel
                 </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Topics Tab */}
+          <TabsContent value="topics" className="space-y-4">
+            {/* Deck-level Review Button */}
+            {topics.length > 0 && (() => {
+              const dueTopics = topics.filter(t => new Date(t.next_review) <= new Date());
+              return dueTopics.length > 0 ? (
+                <Button asChild className="mb-4">
+                  <Link href={`/review/${deckId}`}>
+                    Review Deck ({dueTopics.length} topic{dueTopics.length === 1 ? '' : 's'} due)
+                  </Link>
+                </Button>
+              ) : (
+                <Button disabled className="mb-4">
+                  No Reviews Due
+                </Button>
+              );
+            })()}
+
+            {topics.length === 0 ? (
+              <EmptyState
+                title="No topics yet"
+                description="Create your first topic to add flashcards"
+                action={
+                  <Button onClick={() => {
+                    const tabsTrigger = document.querySelector('[value="create"]') as HTMLElement;
+                    tabsTrigger?.click();
+                  }}>Create Your First Topic</Button>
+                }
+              />
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {topics.map((topic) => (
+                  <Card key={topic.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <CardTitle>{topic.name}</CardTitle>
+                      <CardDescription>
+                        Difficulty: {topic.difficulty.toFixed(1)} | {formatNextReview(topic.next_review)}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Button asChild className="w-full">
+                        <Link href={`/topics/${topic.id}`}>View Cards</Link>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        onClick={() => handleDeleteTopic(topic.id)}
+                      >
+                        Delete
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

@@ -27,8 +27,8 @@ You must return a JSON object with a "cards" array. Each card must be one of two
 1. QA with Hint (qa_hint):
 {
   "card_type": "qa_hint",
-  "question": "The question text",
-  "answer": "The answer text",
+  "question": "The question text (can include markdown formatting)",
+  "answer": "The answer text (should include markdown formatting)",
   "hint": "A helpful hint"
 }
 
@@ -62,7 +62,6 @@ Generate flashcards for this topic based on the instructions.`;
           { role: 'user', content: userMessage },
         ],
         response_format: { type: 'json_object' },
-        temperature: 0.7,
       }),
     });
 
