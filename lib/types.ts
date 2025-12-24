@@ -13,6 +13,7 @@ export interface Topic {
   id: string;
   deck_id: string;
   name: string;
+  cards: CardItem[];
   stability: number;
   difficulty: number;
   next_review: string;
@@ -21,13 +22,29 @@ export interface Topic {
   updated_at: string | null;
 }
 
-export interface BaseCard {
-  id: string;
-  topic_id: string;
+// Card Data Types (embedded in topics)
+export interface QAHintData {
+  question: string;
+  answer: string;
+  hint: string;
+}
+
+export interface MultipleChoiceData {
+  question: string;
+  choices: string[];
+  correct_index: number;
+}
+
+export interface CardItem {
   card_type: 'qa_hint' | 'multiple_choice';
   intrinsic_weight: number;
-  created_at: string | null;
-  updated_at: string | null;
+  card_data: QAHintData | MultipleChoiceData;
+}
+
+// Legacy Card types for backward compatibility during migration
+export interface BaseCard {
+  card_type: 'qa_hint' | 'multiple_choice';
+  intrinsic_weight: number;
 }
 
 export interface QAHintCard extends BaseCard {
@@ -62,13 +79,20 @@ export interface ReviewSubmission {
 
 export interface ReviewResponse {
   topic_id: string;
+  card_index: number;
   new_stability: number;
   new_difficulty: number;
   next_review: string;
   message: string;
 }
 
-export type ReviewCardItem = Card;
+export interface ReviewCardItem {
+  topic_id: string;
+  card_index: number;
+  card_type: 'qa_hint' | 'multiple_choice';
+  intrinsic_weight: number;
+  card_data: QAHintData | MultipleChoiceData;
+}
 
 export interface DeckReviewResponse {
   cards: ReviewCardItem[];
@@ -102,7 +126,6 @@ export interface UpdateTopicRequest {
 }
 
 export interface CreateQAHintCardRequest {
-  topic_id: string;
   card_type: 'qa_hint';
   question: string;
   answer: string;
@@ -111,7 +134,6 @@ export interface CreateQAHintCardRequest {
 }
 
 export interface CreateMultipleChoiceCardRequest {
-  topic_id: string;
   card_type: 'multiple_choice';
   question: string;
   choices: string[];
@@ -123,6 +145,11 @@ export type CreateCardRequest = CreateQAHintCardRequest | CreateMultipleChoiceCa
 
 export interface UpdateCardRequest {
   intrinsic_weight?: number;
+  question?: string;
+  answer?: string;
+  hint?: string;
+  choices?: string[];
+  correct_index?: number;
 }
 
 export interface CreateProfileRequest {

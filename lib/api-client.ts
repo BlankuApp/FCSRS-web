@@ -2,6 +2,7 @@ import {
   Deck,
   Topic,
   Card,
+  CardItem,
   UserProfile,
   ReviewResponse,
   DeckReviewResponse,
@@ -30,9 +31,9 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (this.token) {
@@ -126,31 +127,27 @@ class ApiClient {
     });
   }
 
-  // Cards
-  async createCard(data: CreateCardRequest): Promise<Card> {
-    return this.request('/cards/', {
+  // Cards (via Topics)
+  async addCardToTopic(topicId: string, data: CreateCardRequest): Promise<Topic> {
+    return this.request(`/topics/${topicId}/cards`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async getCardsByTopic(topicId: string): Promise<Card[]> {
-    return this.request(`/cards/topic/${topicId}`);
+  async getTopicCards(topicId: string): Promise<CardItem[]> {
+    return this.request(`/topics/${topicId}/cards`);
   }
 
-  async getCard(cardId: string): Promise<Card> {
-    return this.request(`/cards/${cardId}`);
-  }
-
-  async updateCard(cardId: string, data: UpdateCardRequest): Promise<Card> {
-    return this.request(`/cards/${cardId}`, {
+  async updateTopicCard(topicId: string, index: number, data: UpdateCardRequest): Promise<Topic> {
+    return this.request(`/topics/${topicId}/cards/${index}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteCard(cardId: string): Promise<void> {
-    return this.request(`/cards/${cardId}`, {
+  async deleteTopicCard(topicId: string, index: number): Promise<Topic> {
+    return this.request(`/topics/${topicId}/cards/${index}`, {
       method: 'DELETE',
     });
   }
@@ -161,10 +158,11 @@ class ApiClient {
   }
 
   async submitCardReview(
-    cardId: string,
+    topicId: string,
+    cardIndex: number,
     data: ReviewSubmission
   ): Promise<ReviewResponse> {
-    return this.request(`/review/cards/${cardId}/submit`, {
+    return this.request(`/review/topics/${topicId}/cards/${cardIndex}/submit`, {
       method: 'POST',
       body: JSON.stringify(data),
     });

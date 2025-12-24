@@ -105,16 +105,14 @@ export default function DeckDetailPage() {
       // Add all generated cards to the topic
       for (const card of generatedCards) {
         if (card.card_type === 'qa_hint') {
-          await apiClient.createCard({
-            topic_id: topic.id,
+          await apiClient.addCardToTopic(topic.id, {
             card_type: 'qa_hint',
             question: card.question,
             answer: card.answer || '',
             hint: card.hint,
           });
         } else if (card.card_type === 'multiple_choice') {
-          await apiClient.createCard({
-            topic_id: topic.id,
+          await apiClient.addCardToTopic(topic.id, {
             card_type: 'multiple_choice',
             question: card.question,
             choices: card.choices || [],

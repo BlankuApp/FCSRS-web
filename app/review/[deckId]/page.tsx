@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
-import { Deck, ReviewCardItem, DeckReviewResponse } from '@/lib/types';
+import { Deck, ReviewCardItem, DeckReviewResponse, QAHintData, MultipleChoiceData } from '@/lib/types';
 import { Card as CardUI, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -22,6 +22,7 @@ export default function DeckReviewPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [totalDue, setTotalDue] = useState(0);
   const [totalReviewed, setTotalReviewed] = useState(0);
+  const [reviewedPairs, setReviewedPairs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showHint, setShowHint] = useState(false);
@@ -94,12 +95,36 @@ export default function DeckReviewPage() {
   const handleSubmitReview = async (baseScore: 0 | 1 | 2 | 3) => {
     if (!cards[currentIndex]) return;
 
+    const currentCard = cards[currentIndex];
+    const pairKey = `${currentCard.topic_id}:${currentCard.card_index}`;
+    
+    // Skip if already reviewed in this session
+    if (reviewedPairs.has(pairKey)) {
+      // Move to next card silently
+      if (currentIndex + 1 < cards.length) {
+        setCurrentIndex(prev => prev + 1);
+        setShowHint(false);
+        setShowAnswer(false);
+        setSelectedChoice(null);
+      } else {
+        const remainingDue = totalDue - cards.length;
+        if (remainingDue > 0) {
+          fetchNextBatch();
+        } else {
+          setReviewComplete(true);
+        }
+      }
+      return;
+    }
+
     setSubmitting(true);
     setError('');
 
     try {
-      await apiClient.submitCardReview(cards[currentIndex].id, { base_score: baseScore });
+      await apiClient.submitCardReview(currentCard.topic_id, currentCard.card_index, { base_score: baseScore });
       
+      // Mark this pair as reviewed
+      setReviewedPairs(prev => new Set(prev).add(pairKey));
       setTotalReviewed(prev => prev + 1);
       
       // Move to next card
@@ -225,11 +250,11 @@ export default function DeckReviewPage() {
           {/* Question */}
           <div className="p-4 bg-secondary rounded-lg">
             <h3 className="font-semibold mb-2">Question:</h3>
-            <MarkdownRenderer content={currentCard.question} />
+            <MarkdownRenderer content={currentCard.card_data.question} />
           </div>
 
           {/* Hint (for QA cards only) */}
-          {currentCard.card_type === 'qa_hint' && currentCard.hint && !showAnswer && (
+          {currentCard.card_type === 'qa_hint' && (currentCard.card_data as QAHintData).hint && !showAnswer && (
             <div>
               {!showHint ? (
                 <Button variant="outline" size="sm" onClick={() => setShowHint(true)}>
@@ -238,7 +263,7 @@ export default function DeckReviewPage() {
               ) : (
                 <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                   <h3 className="font-semibold mb-2">Hint:</h3>
-                  <MarkdownRenderer content={currentCard.hint} />
+                  <MarkdownRenderer content={(currentCard.card_data as QAHintData).hint} />
                 </div>
               )}
             </div>
@@ -248,7 +273,7 @@ export default function DeckReviewPage() {
           {currentCard.card_type === 'multiple_choice' && !showAnswer && (
             <div className="space-y-2">
               <h3 className="font-semibold">Choices:</h3>
-              {currentCard.choices.map((choice, index) => (
+              {(currentCard.card_data as MultipleChoiceData).choices.map((choice, index) => (
                 <Button
                   key={index}
                   variant={selectedChoice === index ? 'default' : 'outline'}
@@ -283,13 +308,13 @@ export default function DeckReviewPage() {
               {currentCard.card_type === 'qa_hint' ? (
                 <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                   <h3 className="font-semibold mb-2">Answer:</h3>
-                  <MarkdownRenderer content={currentCard.answer} />
+                  <MarkdownRenderer content={(currentCard.card_data as QAHintData).answer} />
                 </div>
               ) : (
                 <div className="space-y-2">
                   <h3 className="font-semibold">Result:</h3>
-                  {currentCard.choices.map((choice, index) => {
-                    const isCorrect = index === currentCard.correct_index;
+                  {(currentCard.card_data as MultipleChoiceData).choices.map((choice, index) => {
+                    const isCorrect = index === (currentCard.card_data as MultipleChoiceData).correct_index;
                     const isSelected = index === selectedChoice;
 
                     return (

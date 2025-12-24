@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
-import { Topic, Card, CreateCardRequest } from '@/lib/types';
+import { Topic, CardItem, CreateCardRequest, UpdateCardRequest, QAHintData, MultipleChoiceData } from '@/lib/types';
 import { Card as CardUI, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -24,15 +24,15 @@ export default function TopicDetailPage() {
   const topicId = params.id as string;
 
   const [topic, setTopic] = useState<Topic | null>(null);
-  const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [cardType, setCardType] = useState<'qa_hint' | 'multiple_choice'>('qa_hint');
   const [submitting, setSubmitting] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const [qaFormData, setQaFormData] = useState({ question: '', answer: '', hint: '' });
-  const [mcFormData, setMcFormData] = useState({ question: '', choices: ['', ''], correct_index: 0 });
+  const [qaFormData, setQaFormData] = useState({ question: '', answer: '', hint: '', intrinsic_weight: 1.0 });
+  const [mcFormData, setMcFormData] = useState({ question: '', choices: ['', ''], correct_index: 0, intrinsic_weight: 1.0 });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -42,19 +42,15 @@ export default function TopicDetailPage() {
 
   useEffect(() => {
     if (user && topicId) {
-      fetchTopicAndCards();
+      fetchTopic();
     }
   }, [user, topicId]);
 
-  const fetchTopicAndCards = async () => {
+  const fetchTopic = async () => {
     try {
       setLoading(true);
-      const [topicData, cardsData] = await Promise.all([
-        apiClient.getTopic(topicId),
-        apiClient.getCardsByTopic(topicId),
-      ]);
+      const topicData = await apiClient.getTopic(topicId);
       setTopic(topicData);
-      setCards(cardsData);
     } catch (err: any) {
       setError(err.message || 'Failed to load topic');
     } finally {
@@ -72,11 +68,11 @@ export default function TopicDetailPage() {
 
       if (cardType === 'qa_hint') {
         requestData = {
-          topic_id: topicId,
           card_type: 'qa_hint',
           question: qaFormData.question,
           answer: qaFormData.answer,
           hint: qaFormData.hint || undefined,
+          intrinsic_weight: qaFormData.intrinsic_weight,
         };
       } else {
         // Filter out empty choices
@@ -88,19 +84,19 @@ export default function TopicDetailPage() {
         }
         
         requestData = {
-          topic_id: topicId,
           card_type: 'multiple_choice',
           question: mcFormData.question,
           choices: filteredChoices,
           correct_index: mcFormData.correct_index,
+          intrinsic_weight: mcFormData.intrinsic_weight,
         };
       }
 
-      await apiClient.createCard(requestData);
+      const updatedTopic = await apiClient.addCardToTopic(topicId, requestData);
+      setTopic(updatedTopic);
       setDialogOpen(false);
-      setQaFormData({ question: '', answer: '', hint: '' });
-      setMcFormData({ question: '', choices: ['', ''], correct_index: 0 });
-      fetchTopicAndCards();
+      setQaFormData({ question: '', answer: '', hint: '', intrinsic_weight: 1.0 });
+      setMcFormData({ question: '', choices: ['', ''], correct_index: 0, intrinsic_weight: 1.0 });
     } catch (err: any) {
       setError(err.message || 'Failed to create card');
     } finally {
@@ -108,16 +104,97 @@ export default function TopicDetailPage() {
     }
   };
 
-  const handleDeleteCard = async (cardId: string) => {
+  const handleUpdateCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingIndex === null) return;
+    
+    setSubmitting(true);
+    setError('');
+
+    try {
+      let requestData: UpdateCardRequest;
+
+      if (cardType === 'qa_hint') {
+        requestData = {
+          question: qaFormData.question,
+          answer: qaFormData.answer,
+          hint: qaFormData.hint || undefined,
+          intrinsic_weight: qaFormData.intrinsic_weight,
+        };
+      } else {
+        const filteredChoices = mcFormData.choices.filter(c => c.trim());
+        if (filteredChoices.length < 2) {
+          setError('Multiple choice cards must have at least 2 choices');
+          setSubmitting(false);
+          return;
+        }
+        
+        requestData = {
+          question: mcFormData.question,
+          choices: filteredChoices,
+          correct_index: mcFormData.correct_index,
+          intrinsic_weight: mcFormData.intrinsic_weight,
+        };
+      }
+
+      const updatedTopic = await apiClient.updateTopicCard(topicId, editingIndex, requestData);
+      setTopic(updatedTopic);
+      setDialogOpen(false);
+      setEditingIndex(null);
+      setQaFormData({ question: '', answer: '', hint: '', intrinsic_weight: 1.0 });
+      setMcFormData({ question: '', choices: ['', ''], correct_index: 0, intrinsic_weight: 1.0 });
+    } catch (err: any) {
+      setError(err.message || 'Failed to update card');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteCard = async (index: number) => {
     if (!confirm('Are you sure you want to delete this card?')) {
       return;
     }
 
     try {
-      await apiClient.deleteCard(cardId);
-      fetchTopicAndCards();
+      const updatedTopic = await apiClient.deleteTopicCard(topicId, index);
+      setTopic(updatedTopic);
     } catch (err: any) {
       setError(err.message || 'Failed to delete card');
+    }
+  };
+
+  const handleEditCard = (index: number, card: CardItem) => {
+    setEditingIndex(index);
+    setCardType(card.card_type);
+    
+    if (card.card_type === 'qa_hint') {
+      const data = card.card_data as QAHintData;
+      setQaFormData({
+        question: data.question,
+        answer: data.answer,
+        hint: data.hint,
+        intrinsic_weight: card.intrinsic_weight,
+      });
+    } else {
+      const data = card.card_data as MultipleChoiceData;
+      setMcFormData({
+        question: data.question,
+        choices: [...data.choices],
+        correct_index: data.correct_index,
+        intrinsic_weight: card.intrinsic_weight,
+      });
+    }
+    
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setEditingIndex(null);
+      setQaFormData({ question: '', answer: '', hint: '', intrinsic_weight: 1.0 });
+      setMcFormData({ question: '', choices: ['', ''], correct_index: 0, intrinsic_weight: 1.0 });
+      setError('');
     }
   };
 
@@ -166,20 +243,26 @@ export default function TopicDetailPage() {
             Difficulty: {topic?.difficulty.toFixed(1)} | Stability: {Math.round(topic?.stability || 0)}h
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button>Create Card</Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <form onSubmit={handleCreateCard}>
+            <form onSubmit={editingIndex !== null ? handleUpdateCard : handleCreateCard}>
               <DialogHeader>
-                <DialogTitle>Create New Card</DialogTitle>
-                <DialogDescription>Add a new flashcard to this topic</DialogDescription>
+                <DialogTitle>{editingIndex !== null ? 'Edit Card' : 'Create New Card'}</DialogTitle>
+                <DialogDescription>
+                  {editingIndex !== null ? 'Update the flashcard details' : 'Add a new flashcard to this topic'}
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Card Type</Label>
-                  <Select value={cardType} onValueChange={(value: any) => setCardType(value)}>
+                  <Select 
+                    value={cardType} 
+                    onValueChange={(value: any) => setCardType(value)}
+                    disabled={editingIndex !== null}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -225,6 +308,19 @@ export default function TopicDetailPage() {
                         placeholder="It's a major European city"
                         disabled={submitting}
                         rows={2}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="intrinsic-weight">Intrinsic Weight (0.5 - 2.0)</Label>
+                      <Input
+                        id="intrinsic-weight"
+                        type="number"
+                        min="0.5"
+                        max="2.0"
+                        step="0.1"
+                        value={qaFormData.intrinsic_weight}
+                        onChange={(e) => setQaFormData({ ...qaFormData, intrinsic_weight: parseFloat(e.target.value) })}
+                        disabled={submitting}
                       />
                     </div>
                   </>
@@ -294,12 +390,25 @@ export default function TopicDetailPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mc-intrinsic-weight">Intrinsic Weight (0.5 - 2.0)</Label>
+                      <Input
+                        id="mc-intrinsic-weight"
+                        type="number"
+                        min="0.5"
+                        max="2.0"
+                        step="0.1"
+                        value={mcFormData.intrinsic_weight}
+                        onChange={(e) => setMcFormData({ ...mcFormData, intrinsic_weight: parseFloat(e.target.value) })}
+                        disabled={submitting}
+                      />
+                    </div>
                   </>
                 )}
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create Card'}
+                  {submitting ? (editingIndex !== null ? 'Updating...' : 'Creating...') : (editingIndex !== null ? 'Update Card' : 'Create Card')}
                 </Button>
               </DialogFooter>
             </form>
@@ -317,7 +426,7 @@ export default function TopicDetailPage() {
         <div className="flex items-center justify-center min-h-[300px]">
           <p>Loading cards...</p>
         </div>
-      ) : cards.length === 0 ? (
+      ) : !topic || topic.cards.length === 0 ? (
         <EmptyState
           title="No cards yet"
           description="Create your first flashcard for this topic"
@@ -327,68 +436,83 @@ export default function TopicDetailPage() {
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {cards.map((card) => (
-            <CardUI key={card.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {card.card_type === 'qa_hint' ? 'Q&A Card' : 'Multiple Choice Card'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold mb-1">Question:</p>
-                  <MarkdownRenderer content={card.question} />
-                </div>
-                
-                {card.card_type === 'qa_hint' ? (
-                  <>
-                    <div>
-                      <p className="text-sm font-semibold mb-1">Answer:</p>
-                      <MarkdownRenderer content={card.answer} />
-                    </div>
-                    {card.hint && (
+          {topic.cards.map((card, index) => {
+            const isQACard = card.card_type === 'qa_hint';
+            const cardData = card.card_data as QAHintData | MultipleChoiceData;
+            
+            return (
+              <CardUI key={`topic-${topicId}-card-${index}`} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {isQACard ? 'Q&A Card' : 'Multiple Choice Card'} (#{index + 1})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold mb-1">Question:</p>
+                    <MarkdownRenderer content={cardData.question} />
+                  </div>
+                  
+                  {isQACard ? (
+                    <>
                       <div>
-                        <p className="text-sm font-semibold mb-1">Hint:</p>
-                        <MarkdownRenderer content={card.hint} />
+                        <p className="text-sm font-semibold mb-1">Answer:</p>
+                        <MarkdownRenderer content={(cardData as QAHintData).answer} />
                       </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-sm font-semibold mb-1">Choices:</p>
-                      <ul className="list-decimal list-inside space-y-1">
-                        {card.choices.map((choice, index) => (
-                          <li 
-                            key={index} 
-                            className={index === card.correct_index ? 'text-green-600 font-medium' : ''}
-                          >
-                            <MarkdownRenderer content={choice} className="inline" />
-                            {index === card.correct_index && ' ✓'}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </>
-                )}
-                
-                <div className="pt-2">
-                  <p className="text-xs text-muted-foreground">
-                    Weight: {card.intrinsic_weight}
-                  </p>
-                </div>
+                      {(cardData as QAHintData).hint && (
+                        <div>
+                          <p className="text-sm font-semibold mb-1">Hint:</p>
+                          <MarkdownRenderer content={(cardData as QAHintData).hint} />
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="text-sm font-semibold mb-1">Choices:</p>
+                        <ul className="list-decimal list-inside space-y-1">
+                          {(cardData as MultipleChoiceData).choices.map((choice, choiceIndex) => (
+                            <li 
+                              key={choiceIndex} 
+                              className={choiceIndex === (cardData as MultipleChoiceData).correct_index ? 'text-green-600 font-medium' : ''}
+                            >
+                              <MarkdownRenderer content={choice} className="inline" />
+                              {choiceIndex === (cardData as MultipleChoiceData).correct_index && ' ✓'}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                  
+                  <div className="pt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Weight: {card.intrinsic_weight}
+                    </p>
+                  </div>
 
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  size="sm"
-                  onClick={() => handleDeleteCard(card.id)}
-                >
-                  Delete Card
-                </Button>
-              </CardContent>
-            </CardUI>
-          ))}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      size="sm"
+                      onClick={() => handleEditCard(index, card)}
+                    >
+                      Edit Card
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      size="sm"
+                      onClick={() => handleDeleteCard(index)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </CardUI>
+            );
+          })}
         </div>
       )}
     </div>
