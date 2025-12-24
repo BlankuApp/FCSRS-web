@@ -5,15 +5,21 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
-import { Topic } from '@/lib/types';
+import { Topic, Deck } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/empty-state';
 
+interface DeckWithDueTopics {
+  deck: Deck;
+  topics: Topic[];
+  dueCount: number;
+}
+
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [topics, setTopics] = useState<Topic[]>([]);
+  const [deckGroups, setDeckGroups] = useState<DeckWithDueTopics[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -25,15 +31,44 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      fetchDueTopics();
+      fetchDueTopicsGroupedByDeck();
     }
   }, [user]);
 
-  const fetchDueTopics = async () => {
+  const fetchDueTopicsGroupedByDeck = async () => {
     try {
       setLoading(true);
-      const data = await apiClient.getDueTopics(10);
-      setTopics(data);
+      const [dueTopics, allDecks] = await Promise.all([
+        apiClient.getDueTopics(),
+        apiClient.getDecks(),
+      ]);
+
+      // Group topics by deck_id
+      const deckMap = new Map<string, Topic[]>();
+      dueTopics.forEach((topic) => {
+        if (!deckMap.has(topic.deck_id)) {
+          deckMap.set(topic.deck_id, []);
+        }
+        deckMap.get(topic.deck_id)!.push(topic);
+      });
+
+      // Create deck groups with due topics
+      const groups: DeckWithDueTopics[] = [];
+      deckMap.forEach((topics, deckId) => {
+        const deck = allDecks.find((d) => d.id === deckId);
+        if (deck) {
+          groups.push({
+            deck,
+            topics,
+            dueCount: topics.length,
+          });
+        }
+      });
+
+      // Sort by due count (descending)
+      groups.sort((a, b) => b.dueCount - a.dueCount);
+
+      setDeckGroups(groups);
     } catch (err: any) {
       setError(err.message || 'Failed to load due topics');
     } finally {
@@ -74,7 +109,7 @@ export default function DashboardPage() {
     <div className="container mx-auto p-4 max-w-4xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Review your due topics</p>
+        <p className="text-muted-foreground">Review your due topics by deck</p>
       </div>
 
       {error && (
@@ -87,7 +122,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-center min-h-[300px]">
           <p>Loading topics...</p>
         </div>
-      ) : topics.length === 0 ? (
+      ) : deckGroups.length === 0 ? (
         <EmptyState
           title="No reviews due"
           description="You're all caught up! Create your first deck or wait for scheduled reviews."
@@ -98,34 +133,44 @@ export default function DashboardPage() {
           }
         />
       ) : (
-        <div className="space-y-4">
-          {topics.map((topic) => (
-            <Card key={topic.id} className="hover:shadow-md transition-shadow">
+        <div className="space-y-6">
+          {deckGroups.map(({ deck, topics, dueCount }) => (
+            <Card key={deck.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle>{topic.name}</CardTitle>
+                    <CardTitle className="text-xl">{deck.name}</CardTitle>
                     <CardDescription>
-                      Difficulty: {topic.difficulty.toFixed(1)} | Stability:{' '}
-                      {Math.round(topic.stability)}h
+                      {dueCount} topic{dueCount === 1 ? '' : 's'} due for review
                     </CardDescription>
-                  </div>
-                  <div className="text-sm">
-                    <span
-                      className={`font-medium ${
-                        new Date(topic.next_review) < new Date()
-                          ? 'text-destructive'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {formatNextReview(topic.next_review)}
-                    </span>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
+                {/* Show first few topics */}
+                <div className="space-y-2 text-sm">
+                  {topics.slice(0, 3).map((topic) => (
+                    <div key={topic.id} className="flex justify-between items-center p-2 bg-secondary rounded">
+                      <span className="font-medium">{topic.name}</span>
+                      <span
+                        className={`text-xs ${
+                          new Date(topic.next_review) < new Date()
+                            ? 'text-destructive'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {formatNextReview(topic.next_review)}
+                      </span>
+                    </div>
+                  ))}
+                  {topics.length > 3 && (
+                    <div className="text-xs text-muted-foreground text-center">
+                      +{topics.length - 3} more topic{topics.length - 3 === 1 ? '' : 's'}
+                    </div>
+                  )}
+                </div>
                 <Button asChild className="w-full">
-                  <Link href={`/review/${topic.id}`}>Start Review</Link>
+                  <Link href={`/review/${deck.id}`}>Review Deck ({dueCount})</Link>
                 </Button>
               </CardContent>
             </Card>

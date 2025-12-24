@@ -4,6 +4,7 @@ import {
   Card,
   UserProfile,
   ReviewResponse,
+  DeckReviewResponse,
   CreateDeckRequest,
   UpdateDeckRequest,
   CreateTopicRequest,
@@ -155,15 +156,15 @@ class ApiClient {
   }
 
   // Review
-  async getReviewCard(topicId: string): Promise<Card> {
-    return this.request(`/review/topics/${topicId}/review-card`);
+  async getDeckReviewCards(deckId: string): Promise<DeckReviewResponse> {
+    return this.request(`/review/decks/${deckId}/cards`);
   }
 
-  async submitReview(
-    topicId: string,
+  async submitCardReview(
+    cardId: string,
     data: ReviewSubmission
   ): Promise<ReviewResponse> {
-    return this.request(`/review/topics/${topicId}/submit-review`, {
+    return this.request(`/review/cards/${cardId}/submit`, {
       method: 'POST',
       body: JSON.stringify(data),
     });

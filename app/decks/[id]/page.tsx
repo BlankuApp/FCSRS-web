@@ -201,10 +201,26 @@ export default function DeckDetailPage() {
             <p className="text-muted-foreground">{deck.prompt}</p>
           )}
         </div>
-        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
-          <DialogTrigger asChild>
-            <Button>Create Topic</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          {/* Deck-level Review Button */}
+          {topics.length > 0 && (() => {
+            const dueTopics = topics.filter(t => new Date(t.next_review) <= new Date());
+            return dueTopics.length > 0 ? (
+              <Button asChild>
+                <Link href={`/review/${deckId}`}>
+                  Review Deck ({dueTopics.length})
+                </Link>
+              </Button>
+            ) : (
+              <Button disabled>
+                No Reviews Due
+              </Button>
+            );
+          })()}
+          <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Create Topic</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Topic</DialogTitle>
@@ -308,6 +324,7 @@ export default function DeckDetailPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {error && !dialogOpen && (
@@ -341,14 +358,6 @@ export default function DeckDetailPage() {
               <CardContent className="space-y-2">
                 <Button asChild className="w-full">
                   <Link href={`/topics/${topic.id}`}>View Cards</Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  asChild
-                  disabled={new Date(topic.next_review) > new Date()}
-                >
-                  <Link href={`/review/${topic.id}`}>Review Now</Link>
                 </Button>
                 <Button
                   variant="destructive"

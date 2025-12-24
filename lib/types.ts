@@ -68,6 +68,14 @@ export interface ReviewResponse {
   message: string;
 }
 
+export type ReviewCardItem = Card;
+
+export interface DeckReviewResponse {
+  cards: ReviewCardItem[];
+  total_due: number;
+  deck_id: string;
+}
+
 // Request Types
 
 export interface CreateDeckRequest {
