@@ -55,11 +55,10 @@ export default function CreateDeckDialog({ open, onOpenChange, onSuccess }: Crea
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="min-w-[90vw] max-h-[90vh]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create New Deck</DialogTitle>
-            <DialogDescription>Add a new deck to organize your topics</DialogDescription>
           </DialogHeader>
           
           {error && (
@@ -88,7 +87,7 @@ export default function CreateDeckDialog({ open, onOpenChange, onSuccess }: Crea
                 value={formData.prompt}
                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                 placeholder="Enter the prompt that defines this deck..."
-                className="max-h-[200px] overflow-y-auto resize-none"
+                className="min-h-[calc(90vh-250px)] w-full overflow-y-auto resize-none"
                 required
                 disabled={submitting}
               />

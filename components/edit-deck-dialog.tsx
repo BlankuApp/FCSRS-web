@@ -86,11 +86,10 @@ export default function EditDeckDialog({ deck, open, onOpenChange, onSuccess, on
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[100vh] overflow-y-auto">
+      <DialogContent className="min-w-[90vw] max-h-[90vh]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Edit Deck</DialogTitle>
-            <DialogDescription>Update your deck details</DialogDescription>
           </DialogHeader>
           
           {error && (
@@ -119,7 +118,7 @@ export default function EditDeckDialog({ deck, open, onOpenChange, onSuccess, on
                 value={formData.prompt}
                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                 placeholder="Enter the prompt that defines this deck..."
-                className="min-h-[400px] max-h-[500px] overflow-y-auto resize-none"
+                className="w-full max-h-[calc(90vh-250px)] overflow-y-auto resize-none"
                 required
                 disabled={submitting || deleting}
               />

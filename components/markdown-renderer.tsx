@@ -10,7 +10,7 @@ interface MarkdownRendererProps {
 
 export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none ${className}`}>
+    <div dir="auto" className={`prose prose-sm dark:prose-invert max-w-none ${className}`}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>
         {content}
       </ReactMarkdown>
