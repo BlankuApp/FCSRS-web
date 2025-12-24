@@ -19,8 +19,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = `You are an expert educator creating flashcards for a spaced repetition learning system. Generate high-quality flashcards based on the user's deck prompt and topic.
+    const systemPrompt = `${deckPrompt}
 
+# Output Format (STRICT JSON)
 You must return a JSON object with a "cards" array. Each card must be one of two types:
 
 1. QA with Hint (qa_hint):
@@ -39,24 +40,14 @@ You must return a JSON object with a "cards" array. Each card must be one of two
   "correct_index": 0
 }
 
-Guidelines:
-- Create a mix of card types as appropriate for the content
-- Questions should be clear and specific
-- Answers should be accurate and educational
-- Hints should guide without giving away the answer
-- Multiple choice should have plausible distractors
-- Follow any specific instructions in the deck prompt regarding number of cards, difficulty, etc.
-
 Return ONLY valid JSON in this format:
 {
   "cards": [...]
 }`;
 
-    const userMessage = `Deck Prompt: ${deckPrompt}
+    const userMessage = `Topic: ${topicName}
 
-Topic: ${topicName}
-
-Generate flashcards for this topic based on the deck prompt instructions.`;
+Generate flashcards for this topic based on the instructions.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
