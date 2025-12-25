@@ -92,7 +92,9 @@ export default function TopicDetailPage() {
         };
       }
 
-      const updatedTopic = await apiClient.addCardToTopic(topicId, requestData);
+      const updatedTopic = await apiClient.addCardsBatchToTopic(topicId, {
+        cards: [requestData],
+      });
       setTopic(updatedTopic);
       setDialogOpen(false);
       setQaFormData({ question: '', answer: '', hint: '', intrinsic_weight: 1.0 });

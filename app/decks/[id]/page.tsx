@@ -118,24 +118,26 @@ export default function DeckDetailPage() {
         name: topicName,
       });
 
-      // Add all generated cards to the topic
-      for (const card of generatedCards) {
-        if (card.card_type === 'qa_hint') {
-          await apiClient.addCardToTopic(topic.id, {
-            card_type: 'qa_hint',
-            question: card.question,
-            answer: card.answer || '',
-            hint: card.hint,
-          });
-        } else if (card.card_type === 'multiple_choice') {
-          await apiClient.addCardToTopic(topic.id, {
-            card_type: 'multiple_choice',
-            question: card.question,
-            choices: card.choices || [],
-            correct_index: card.correct_index || 0,
-          });
-        }
-      }
+      // Add all generated cards to the topic in batch
+      await apiClient.addCardsBatchToTopic(topic.id, {
+        cards: generatedCards.map(card => {
+          if (card.card_type === 'qa_hint') {
+            return {
+              card_type: 'qa_hint',
+              question: card.question,
+              answer: card.answer || '',
+              hint: card.hint || '',
+            };
+          } else {
+            return {
+              card_type: 'multiple_choice',
+              question: card.question,
+              choices: card.choices || [],
+              correct_index: card.correct_index || 0,
+            };
+          }
+        }),
+      });
 
       // Reset form and refresh
       setTopicName('');

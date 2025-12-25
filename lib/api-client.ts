@@ -11,6 +11,7 @@ import {
   CreateTopicRequest,
   UpdateTopicRequest,
   CreateCardRequest,
+  CardCreateBatch,
   UpdateCardRequest,
   ReviewSubmission,
   CreateProfileRequest,
@@ -128,8 +129,8 @@ class ApiClient {
   }
 
   // Cards (via Topics)
-  async addCardToTopic(topicId: string, data: CreateCardRequest): Promise<Topic> {
-    return this.request(`/topics/${topicId}/cards`, {
+  async addCardsBatchToTopic(topicId: string, data: CardCreateBatch): Promise<Topic> {
+    return this.request(`/topics/${topicId}/cards/batch`, {
       method: 'POST',
       body: JSON.stringify(data),
     });

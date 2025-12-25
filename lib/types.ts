@@ -143,6 +143,11 @@ export interface CreateMultipleChoiceCardRequest {
 
 export type CreateCardRequest = CreateQAHintCardRequest | CreateMultipleChoiceCardRequest;
 
+export interface CardCreateBatch {
+  cards: CreateCardRequest[];
+  mode?: 'append' | 'replace';
+}
+
 export interface UpdateCardRequest {
   intrinsic_weight?: number;
   question?: string;
