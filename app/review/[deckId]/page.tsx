@@ -236,7 +236,7 @@ export default function DeckReviewPage() {
         </Alert>
       )}
 
-      <CardUI>
+      <div>
         <CardContent className="space-y-4">
           {/* Question */}
           <div className="p-3 bg-secondary rounded-lg">
@@ -380,7 +380,7 @@ export default function DeckReviewPage() {
             </>
           )}
         </CardContent>
-      </CardUI>
+      </div>
     </div>
   );
 }
