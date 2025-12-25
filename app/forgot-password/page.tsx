@@ -11,25 +11,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, ArrowLeft, Check } from 'lucide-react';
 
-const loginSchema = z.object({
+const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
-export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const { user, loading: authLoading, signIn } = useAuth();
+export default function ForgotPasswordPage() {
+  const [success, setSuccess] = useState(false);
+  const { user, loading: authLoading, resetPassword } = useAuth();
   const router = useRouter();
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: '',
-      password: '',
     },
   });
 
@@ -39,14 +37,14 @@ export default function LoginPage() {
     }
   }, [user, authLoading, router]);
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: ForgotPasswordFormValues) => {
     try {
-      await signIn(data.email, data.password);
-      router.push('/dashboard');
+      await resetPassword(data.email);
+      setSuccess(true);
     } catch (err: any) {
-      form.setError('root', {
+      form.setError('email', {
         type: 'manual',
-        message: err.message || 'Failed to sign in',
+        message: err.message || 'Failed to send reset email',
       });
     }
   };
@@ -55,6 +53,55 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+          {/* Left Panel - Branding */}
+          <div className="hidden lg:flex flex-col justify-center space-y-6 p-12">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold tracking-tight">TCSRS</h1>
+              <p className="text-xl text-muted-foreground">
+                Your intelligent spaced repetition learning companion
+              </p>
+            </div>
+            <div className="space-y-4 text-muted-foreground">
+              <p>✓ Generate flashcards with AI</p>
+              <p>✓ Smart spaced repetition algorithm</p>
+              <p>✓ Track your learning progress</p>
+            </div>
+          </div>
+
+          {/* Right Panel - Success Message */}
+          <div className="flex items-center justify-center">
+            <Card className="w-full max-w-md border-border/50 shadow-lg">
+              <CardHeader className="text-center space-y-2">
+                <div className="mx-auto w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-2">
+                  <Check className="w-6 h-6 text-green-500" />
+                </div>
+                <CardTitle>Check Your Email</CardTitle>
+                <CardDescription>
+                  We've sent a password reset link to your email address. Click the link to reset your password.
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="flex flex-col space-y-4">
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/login">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Login
+                  </Link>
+                </Button>
+                <p className="text-sm text-muted-foreground text-center">
+                  Didn't receive the email? Check your spam folder or try again.
+                </p>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -81,18 +128,14 @@ export default function LoginPage() {
         <div className="flex items-center justify-center">
           <Card className="w-full max-w-md border-border/50 shadow-lg">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl">Sign In</CardTitle>
-              <CardDescription>Enter your email and password to access your account</CardDescription>
+              <CardTitle className="text-2xl">Forgot Password?</CardTitle>
+              <CardDescription>
+                Enter your email address and we'll send you a link to reset your password.
+              </CardDescription>
             </CardHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <CardContent className="space-y-4">
-                  {form.formState.errors.root && (
-                    <div className="text-sm font-medium text-destructive">
-                      {form.formState.errors.root.message}
-                    </div>
-                  )}
-
                   <FormField
                     control={form.control}
                     name="email"
@@ -115,49 +158,6 @@ export default function LoginPage() {
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                              {...field}
-                              type={showPassword ? 'text' : 'password'}
-                              placeholder="••••••••"
-                              className="pl-10 pr-10"
-                              disabled={form.formState.isSubmitting}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              {showPassword ? (
-                                <EyeOff className="w-4 h-4" />
-                              ) : (
-                                <Eye className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex justify-end">
-                    <Link 
-                      href="/forgot-password" 
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-4">
                   <Button 
@@ -165,14 +165,14 @@ export default function LoginPage() {
                     className="w-full" 
                     disabled={form.formState.isSubmitting}
                   >
-                    {form.formState.isSubmitting ? 'Signing in...' : 'Sign In'}
+                    {form.formState.isSubmitting ? 'Sending...' : 'Send Reset Link'}
                   </Button>
-                  <p className="text-sm text-muted-foreground text-center">
-                    Don&apos;t have an account?{' '}
-                    <Link href="/signup" className="text-primary hover:underline">
-                      Sign up
+                  <Button asChild variant="ghost" className="w-full">
+                    <Link href="/login">
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Login
                     </Link>
-                  </p>
+                  </Button>
                 </CardFooter>
               </form>
             </Form>
