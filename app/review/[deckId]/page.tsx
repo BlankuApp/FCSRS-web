@@ -217,14 +217,11 @@ export default function DeckReviewPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="container mx-auto p-2 md:p-4">
+      <div className="mb-4">
         <Button asChild variant="ghost" size="sm">
           <Link href="/dashboard">← Back to Dashboard</Link>
         </Button>
-        <div className="text-sm text-muted-foreground">
-          Card {currentIndex + 1} of {cards.length} • {totalReviewed + totalDue} total due
-        </div>
       </div>
 
       {error && (
@@ -240,15 +237,9 @@ export default function DeckReviewPage() {
       )}
 
       <CardUI>
-        <CardHeader>
-          <CardTitle>{deck?.name || 'Review'}</CardTitle>
-          <CardDescription>
-            {currentCard.card_type === 'qa_hint' ? 'Question & Answer' : 'Multiple Choice'}
-          </CardDescription>
-        </CardHeader>
         <CardContent className="space-y-4">
           {/* Question */}
-          <div className="p-4 bg-secondary rounded-lg">
+          <div className="p-3 bg-secondary rounded-lg">
             <h3 className="font-semibold mb-2">Question:</h3>
             <MarkdownRenderer content={currentCard.card_data.question} />
           </div>
@@ -261,7 +252,7 @@ export default function DeckReviewPage() {
                   Show Hint
                 </Button>
               ) : (
-                <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                   <h3 className="font-semibold mb-2">Hint:</h3>
                   <MarkdownRenderer content={(currentCard.card_data as QAHintData).hint} />
                 </div>
@@ -306,7 +297,7 @@ export default function DeckReviewPage() {
           {showAnswer && (
             <>
               {currentCard.card_type === 'qa_hint' ? (
-                <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
                   <h3 className="font-semibold mb-2">Answer:</h3>
                   <MarkdownRenderer content={(currentCard.card_data as QAHintData).answer} />
                 </div>
@@ -347,10 +338,10 @@ export default function DeckReviewPage() {
               {/* Rating Buttons */}
               <div>
                 <h3 className="font-semibold mb-2">How well did you remember?</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
                   <Button
                     variant="outline"
-                    className="h-auto py-3 px-4 flex flex-col items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 border-red-200 dark:border-red-800"
+                    className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 border-red-200 dark:border-red-800"
                     onClick={() => handleSubmitReview(0)}
                     disabled={submitting}
                   >

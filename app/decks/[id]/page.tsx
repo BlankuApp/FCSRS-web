@@ -9,6 +9,7 @@ import { Deck, Topic } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InputGroup, InputGroupInput, InputGroupButton } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -260,9 +261,8 @@ export default function DeckDetailPage() {
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="topicName">Topic Name</Label>
-                <div className="flex gap-2">
-                  <Input
+                <InputGroup>
+                  <InputGroupInput
                     id="topicName"
                     value={topicName}
                     onChange={(e) => setTopicName(e.target.value)}
@@ -270,7 +270,7 @@ export default function DeckDetailPage() {
                     maxLength={255}
                     disabled={isGenerating || isAdding}
                   />
-                  <Button
+                  <InputGroupButton
                     type="button"
                     onClick={handleGenerateCards}
                     disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt}
@@ -283,8 +283,8 @@ export default function DeckDetailPage() {
                     ) : (
                       'Generate Cards'
                     )}
-                  </Button>
-                </div>
+                  </InputGroupButton>
+                </InputGroup>
                 {!deck?.prompt && (
                   <p className="text-sm text-muted-foreground">Please add a prompt in the Prompt tab first</p>
                 )}
