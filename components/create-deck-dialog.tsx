@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import Loading from '@/components/loading';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,7 +97,14 @@ export default function CreateDeckDialog({ open, onOpenChange, onSuccess }: Crea
           
           <DialogFooter>
             <Button type="submit" disabled={submitting}>
-              {submitting ? 'Creating...' : 'Create Deck'}
+              {submitting ? (
+                <>
+                  <Loading variant="spinner" size="sm" className="mr-2" />
+                  Creating...
+                </>
+              ) : (
+                'Create Deck'
+              )}
             </Button>
           </DialogFooter>
         </form>

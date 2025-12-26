@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BookOpenIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
+import Loading from '@/components/loading';
+import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api-client';
 import { Topic, Deck } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -104,13 +106,7 @@ export default function DashboardPage() {
   };
 
   if (authLoading || !user) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+    return <Loading variant="page" />;
   }
 
   return (
@@ -127,8 +123,17 @@ export default function DashboardPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <p>Loading topics...</p>
+        <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-4 p-4 rounded-lg border">
+              <Skeleton className="h-12 w-12 rounded-md" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+              <Skeleton className="h-9 w-20" />
+            </div>
+          ))}
         </div>
       ) : deckGroups.length === 0 ? (
         <EmptyState

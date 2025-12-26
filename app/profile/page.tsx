@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import Loading from '@/components/loading';
 import { apiClient } from '@/lib/api-client';
 import { UserProfile } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,13 +79,7 @@ export default function ProfilePage() {
   };
 
   if (authLoading || !user) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+    return <Loading variant="page" />;
   }
 
   return (
@@ -107,9 +102,7 @@ export default function ProfilePage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <p>Loading profile...</p>
-        </div>
+        <Loading variant="content" text="Loading profile..." />
       ) : !profile ? (
         <Alert variant="destructive">
           <AlertDescription>Profile not found. Please try signing out and back in.</AlertDescription>

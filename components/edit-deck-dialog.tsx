@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { Deck } from '@/lib/types';
+import Loading from '@/components/loading';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -132,10 +133,24 @@ export default function EditDeckDialog({ deck, open, onOpenChange, onSuccess, on
               onClick={handleDelete}
               disabled={submitting || deleting}
             >
-              {deleting ? 'Deleting...' : 'Delete Deck'}
+              {deleting ? (
+                <>
+                  <Loading variant="spinner" size="sm" className="mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Deck'
+              )}
             </Button>
             <Button type="submit" disabled={submitting || deleting}>
-              {submitting ? 'Saving...' : 'Save Changes'}
+              {submitting ? (
+                <>
+                  <Loading variant="spinner" size="sm" className="mr-2" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </DialogFooter>
         </form>

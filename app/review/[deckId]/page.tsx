@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
+import Loading from '@/components/loading';
 import { apiClient } from '@/lib/api-client';
 import { Deck, ReviewCardItem, DeckReviewResponse, QAHintData, MultipleChoiceData } from '@/lib/types';
 import { Card as CardUI, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -237,23 +238,11 @@ export default function DeckReviewPage() {
   const currentCard = cards[currentIndex];
 
   if (authLoading || !user) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+    return <Loading variant="page" />;
   }
 
   if (loading) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p>Loading review...</p>
-        </div>
-      </div>
-    );
+    return <Loading variant="page" text="Loading review..." />;
   }
 
   if (reviewComplete) {
@@ -302,9 +291,7 @@ export default function DeckReviewPage() {
       )}
 
       {fetching && (
-        <Alert className="mb-4">
-          <AlertDescription>Loading next batch of cards...</AlertDescription>
-        </Alert>
+        <Loading variant="inline" text="Loading next batch of cards..." className="mb-4" />
       )}
 
       <div className="mb-4 flex justify-between items-center">

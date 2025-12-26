@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
+import Loading from '@/components/loading';
 import { CardItem, CreateCardRequest, UpdateCardRequest, QAHintData, MultipleChoiceData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -358,11 +359,25 @@ export default function EditCardDialog({
                 onClick={handleDelete}
                 disabled={submitting || deleting}
               >
-                {deleting ? 'Deleting...' : 'Delete Card'}
+                {deleting ? (
+                  <>
+                    <Loading variant="spinner" size="sm" className="mr-2" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Card'
+                )}
               </Button>
             )}
             <Button type="submit" disabled={submitting || deleting}>
-              {submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Card' : 'Create Card')}
+              {submitting ? (
+                <>
+                  <Loading variant="spinner" size="sm" className="mr-2" />
+                  {isEditMode ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                isEditMode ? 'Update Card' : 'Create Card'
+              )}
             </Button>
           </DialogFooter>
         </form>

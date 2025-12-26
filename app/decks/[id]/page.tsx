@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
+import Loading from '@/components/loading';
 import { apiClient } from '@/lib/api-client';
 import { Deck, Topic } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -281,13 +282,7 @@ export default function DeckDetailPage() {
   };
 
   if (authLoading || !user) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+    return <Loading variant="page" />;
   }
 
   return (
@@ -303,9 +298,7 @@ export default function DeckDetailPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <p>Loading...</p>
-        </div>
+        <Loading variant="content" text="Loading deck..." />
       ) : (
         <Tabs defaultValue="create" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
@@ -340,7 +333,7 @@ export default function DeckDetailPage() {
                   >
                     {isGenerating ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loading variant="spinner" size="sm" className="mr-2" />
                         Generating...
                       </>
                     ) : (

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import Loading from '@/components/loading';
+import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api-client';
 import { Deck } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -55,13 +57,7 @@ export default function DecksPage() {
   };
 
   if (authLoading || !user) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+    return <Loading variant="page" />;
   }
 
   return (
@@ -89,8 +85,18 @@ export default function DecksPage() {
       />
 
       {loading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <p>Loading decks...</p>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-lg border p-6 space-y-3">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3" />
+              <div className="flex gap-2 pt-2">
+                <Skeleton className="h-9 flex-1" />
+                <Skeleton className="h-9 w-9" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : decks.length === 0 ? (
         <EmptyState

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import Loading from '@/components/loading';
+import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api-client';
 import { Topic, CardItem, QAHintData, MultipleChoiceData } from '@/lib/types';
 import { Card as CardUI, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,13 +72,7 @@ export default function TopicDetailPage() {
   };
 
   if (authLoading || !user) {
-    return (
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+    return <Loading variant="page" />;
   }
 
   return (
@@ -110,8 +106,23 @@ export default function TopicDetailPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center min-h-[300px]">
-          <p>Loading cards...</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-lg border p-6 space-y-4">
+              <Skeleton className="h-5 w-32" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+              </div>
+              <Skeleton className="h-9 w-24" />
+            </div>
+          ))}
         </div>
       ) : !topic || topic.cards.length === 0 ? (
         <EmptyState
