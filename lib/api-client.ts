@@ -1,6 +1,7 @@
 import {
   Deck,
   Topic,
+  TopicListResponse,
   Card,
   CardItem,
   UserProfile,
@@ -102,8 +103,27 @@ class ApiClient {
     });
   }
 
-  async getTopicsByDeck(deckId: string): Promise<Topic[]> {
-    return this.request(`/topics/deck/${deckId}`);
+  async getTopicsByDeck(
+    deckId: string,
+    params?: {
+      page?: number;
+      page_size?: number;
+      sort_by?: string;
+      sort_order?: 'asc' | 'desc';
+    }
+  ): Promise<TopicListResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+    if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params?.sort_order) queryParams.append('sort_order', params.sort_order);
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString 
+      ? `/topics/deck/${deckId}?${queryString}`
+      : `/topics/deck/${deckId}`;
+    
+    return this.request(endpoint);
   }
 
   async getDueTopics(limit?: number): Promise<Topic[]> {

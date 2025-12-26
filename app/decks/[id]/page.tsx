@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { apiClient } from '@/lib/api-client';
-import { Deck, Topic } from '@/lib/types';
+import { Deck, Topic, TopicListResponse } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Loader2, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import EmptyState from '@/components/empty-state';
 import MarkdownRenderer from '@/components/markdown-renderer';
 
@@ -39,7 +40,23 @@ export default function DeckDetailPage() {
   const [deck, setDeck] = useState<Deck | null>(null);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetchingTopics, setIsFetchingTopics] = useState(false);
   const [error, setError] = useState('');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('topicsPageSize');
+      return saved ? parseInt(saved) : 25;
+    }
+    return 25;
+  });
+  const [sortBy, setSortBy] = useState<'name' | 'difficulty' | 'next_review'>('next_review');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [totalPages, setTotalPages] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
 
   // Create Topic state
   const [topicName, setTopicName] = useState('');
@@ -72,6 +89,12 @@ export default function DeckDetailPage() {
   }, [user, deckId]);
 
   useEffect(() => {
+    if (user && deckId && deck) {
+      fetchDeckAndTopics();
+    }
+  }, [currentPage, pageSize, sortBy, sortOrder]);
+
+  useEffect(() => {
     if (deck) {
       setEditedPrompt(deck.prompt);
     }
@@ -79,17 +102,36 @@ export default function DeckDetailPage() {
 
   const fetchDeckAndTopics = async () => {
     try {
-      setLoading(true);
-      const [deckData, topicsData] = await Promise.all([
-        apiClient.getDeck(deckId),
-        apiClient.getTopicsByDeck(deckId),
-      ]);
+      // Only show full loading state on initial load (when deck is not yet loaded)
+      if (!deck) {
+        setLoading(true);
+      } else {
+        // Show subtle loading indicator for subsequent fetches
+        setIsFetchingTopics(true);
+      }
+      
+      const deckData = await apiClient.getDeck(deckId);
       setDeck(deckData);
-      setTopics(topicsData);
+      
+      const topicsData = await apiClient.getTopicsByDeck(deckId, {
+        page: currentPage,
+        page_size: pageSize,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      });
+      
+      setTopics(topicsData.items);
+      setTotalPages(topicsData.total_pages);
+      setHasNext(topicsData.has_next);
+      setHasPrev(topicsData.has_prev);
     } catch (err: any) {
       setError(err.message || 'Failed to load deck');
     } finally {
-      setLoading(false);
+      // Only clear loading state if it was set
+      if (!deck) {
+        setLoading(false);
+      }
+      setIsFetchingTopics(false);
     }
   };
 
@@ -278,6 +320,27 @@ export default function DeckDetailPage() {
       return `Due in ${diffHours}h`;
     } else {
       return `Due in ${diffDays}d`;
+    }
+  };
+
+  const handleSortChange = (field: 'name' | 'difficulty' | 'next_review') => {
+    if (sortBy === field) {
+      // Toggle order if same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to asc
+      setSortBy(field);
+      setSortOrder('asc');
+      setCurrentPage(1);
+    }
+  };
+
+  const handlePageSizeChange = (newSize: string) => {
+    const size = parseInt(newSize);
+    setPageSize(size);
+    setCurrentPage(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('topicsPageSize', size.toString());
     }
   };
 
@@ -481,23 +544,7 @@ export default function DeckDetailPage() {
 
           {/* Topics Tab */}
           <TabsContent value="topics" className="space-y-4">
-            {/* Deck-level Review Button */}
-            {topics.length > 0 && (() => {
-              const dueTopics = topics.filter(t => new Date(t.next_review) <= new Date());
-              return dueTopics.length > 0 ? (
-                <Button asChild className="mb-4">
-                  <Link href={`/review/${deckId}`}>
-                    Review Deck ({dueTopics.length} topic{dueTopics.length === 1 ? '' : 's'} due)
-                  </Link>
-                </Button>
-              ) : (
-                <Button disabled className="mb-4">
-                  No Reviews Due
-                </Button>
-              );
-            })()}
-
-            {topics.length === 0 ? (
+            {topics.length === 0 && !loading ? (
               <EmptyState
                 title="No topics yet"
                 description="Create your first topic to add flashcards"
@@ -509,30 +556,143 @@ export default function DeckDetailPage() {
                 }
               />
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {topics.map((topic) => (
-                  <Card key={topic.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
-                      <CardTitle>{topic.name}</CardTitle>
-                      <CardDescription>
-                        Difficulty: {topic.difficulty.toFixed(1)} | {formatNextReview(topic.next_review)}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <Button asChild className="w-full">
-                        <Link href={`/topics/${topic.id}`}>View Cards</Link>
-                      </Button>
+              <>
+                {/* Topics Table */}
+                <div className="rounded-md border overflow-x-auto relative">
+                  {isFetchingTopics && (
+                    <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-md">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                  <Table className={isFetchingTopics ? 'opacity-50' : ''}>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => handleSortChange('name')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Topic Name
+                            {sortBy === 'name' && (
+                              sortOrder === 'asc' ? 
+                                <ChevronUp className="h-4 w-4" /> : 
+                                <ChevronDown className="h-4 w-4" />
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="text-center">Cards</TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-colors text-center"
+                          onClick={() => handleSortChange('difficulty')}
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            Difficulty
+                            {sortBy === 'difficulty' && (
+                              sortOrder === 'asc' ? 
+                                <ChevronUp className="h-4 w-4" /> : 
+                                <ChevronDown className="h-4 w-4" />
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => handleSortChange('next_review')}
+                        >
+                          <div className="flex items-center gap-2">
+                            Next Review
+                            {sortBy === 'next_review' && (
+                              sortOrder === 'asc' ? 
+                                <ChevronUp className="h-4 w-4" /> : 
+                                <ChevronDown className="h-4 w-4" />
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {topics.map((topic) => (
+                        <TableRow key={topic.id} className="hover:bg-muted/50 transition-colors">
+                          <TableCell className="font-medium">
+                            <Link 
+                              href={`/topics/${topic.id}`}
+                              className="text-primary hover:underline"
+                            >
+                              {topic.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {topic.cards.length}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {topic.difficulty.toFixed(1)}
+                          </TableCell>
+                          <TableCell>
+                            {formatNextReview(topic.next_review)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteTopic(topic.id)}
+                              disabled={loading || isFetchingTopics}
+                              className="h-8 w-8 p-0 hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete topic</span>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 0 && (
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pt-4 border-t">
+                    <div className="flex items-center gap-2">
                       <Button
-                        variant="destructive"
-                        className="w-full"
-                        onClick={() => handleDeleteTopic(topic.id)}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        disabled={!hasPrev || loading || isFetchingTopics}
                       >
-                        Delete
+                        Previous
                       </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        disabled={!hasNext || loading || isFetchingTopics}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Items per page:</span>
+                      <Select
+                        value={pageSize.toString()}
+                        onValueChange={handlePageSizeChange}
+                        disabled={loading || isFetchingTopics}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>

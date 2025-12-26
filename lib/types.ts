@@ -22,6 +22,16 @@ export interface Topic {
   updated_at: string | null;
 }
 
+export interface TopicListResponse {
+  items: Topic[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
 // Card Data Types (embedded in topics)
 export interface QAHintData {
   question: string;
