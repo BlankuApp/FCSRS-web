@@ -44,6 +44,36 @@ export default function DeckReviewPage() {
     }
   }, [user, deckId]);
 
+  const shuffleMultipleChoiceCards = (cards: ReviewCardItem[]): ReviewCardItem[] => {
+    return cards.map(card => {
+      if (card.card_type === 'multiple_choice') {
+        const mcData = card.card_data as MultipleChoiceData;
+        const correctAnswer = mcData.choices[mcData.correct_index];
+        
+        // Create array of indices and shuffle them
+        const indices = mcData.choices.map((_, i) => i);
+        for (let i = indices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        
+        // Reorder choices based on shuffled indices
+        const shuffledChoices = indices.map(i => mcData.choices[i]);
+        const newCorrectIndex = shuffledChoices.indexOf(correctAnswer);
+        
+        return {
+          ...card,
+          card_data: {
+            ...mcData,
+            choices: shuffledChoices,
+            correct_index: newCorrectIndex
+          }
+        };
+      }
+      return card;
+    });
+  };
+
   const loadDeckAndCards = async () => {
     try {
       setLoading(true);
@@ -59,7 +89,7 @@ export default function DeckReviewPage() {
       if (reviewData.cards.length === 0) {
         setReviewComplete(true);
       } else {
-        setCards(reviewData.cards);
+        setCards(shuffleMultipleChoiceCards(reviewData.cards));
         setTotalDue(reviewData.total_due);
         setCurrentIndex(0);
       }
@@ -78,7 +108,7 @@ export default function DeckReviewPage() {
       if (reviewData.cards.length === 0) {
         setReviewComplete(true);
       } else {
-        setCards(reviewData.cards);
+        setCards(shuffleMultipleChoiceCards(reviewData.cards));
         setTotalDue(reviewData.total_due);
         setCurrentIndex(0);
         setShowHint(false);
@@ -106,6 +136,7 @@ export default function DeckReviewPage() {
         setShowHint(false);
         setShowAnswer(false);
         setSelectedChoice(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         const remainingDue = totalDue - cards.length;
         if (remainingDue > 0) {
@@ -133,6 +164,7 @@ export default function DeckReviewPage() {
         setShowHint(false);
         setShowAnswer(false);
         setSelectedChoice(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         // Finished current batch
         const remainingDue = totalDue - cards.length;
@@ -218,12 +250,6 @@ export default function DeckReviewPage() {
 
   return (
     <div className="container mx-auto p-2 md:p-4">
-      <div className="mb-4">
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/dashboard">← Back to Dashboard</Link>
-        </Button>
-      </div>
-
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
@@ -268,12 +294,12 @@ export default function DeckReviewPage() {
                 <Button
                   key={index}
                   variant={selectedChoice === index ? 'default' : 'outline'}
-                  className="w-full justify-start text-left h-auto py-3 px-4"
+                  className="w-full justify-start text-left h-auto py-3 px-4 whitespace-normal"
                   onClick={() => setSelectedChoice(index)}
                 >
                   <div className="flex items-start gap-2 w-full">
-                    <span className="font-semibold">{String.fromCharCode(65 + index)}.</span>
-                    <div className="flex-1">
+                    <span className="font-semibold flex-shrink-0">{String.fromCharCode(65 + index)}.</span>
+                    <div className="flex-1 break-words overflow-wrap-anywhere">
                       <MarkdownRenderer content={choice} />
                     </div>
                   </div>

@@ -3,11 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { BookOpenIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { Topic, Deck } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item';
 import EmptyState from '@/components/empty-state';
 
 interface DeckWithDueTopics {
@@ -133,47 +141,24 @@ export default function DashboardPage() {
           }
         />
       ) : (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-4 max-w-2xl mx-auto">
           {deckGroups.map(({ deck, topics, dueCount }) => (
-            <Card key={deck.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-xl">{deck.name}</CardTitle>
-                    <CardDescription>
-                      {dueCount} topic{dueCount === 1 ? '' : 's'} due for review
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Show first few topics */}
-                <div className="space-y-2 text-sm">
-                  {topics.slice(0, 3).map((topic) => (
-                    <div key={topic.id} className="flex justify-between items-center p-2 bg-secondary rounded">
-                      <span className="font-medium">{topic.name}</span>
-                      <span
-                        className={`text-xs ${
-                          new Date(topic.next_review) < new Date()
-                            ? 'text-destructive'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {formatNextReview(topic.next_review)}
-                      </span>
-                    </div>
-                  ))}
-                  {topics.length > 3 && (
-                    <div className="text-xs text-muted-foreground text-center">
-                      +{topics.length - 3} more topic{topics.length - 3 === 1 ? '' : 's'}
-                    </div>
-                  )}
-                </div>
-                <Button asChild className="w-full">
-                  <Link href={`/review/${deck.id}`}>Review Deck ({dueCount})</Link>
+            <Item key={deck.id} variant="outline">
+              <ItemMedia variant="icon">
+                <BookOpenIcon />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>{deck.name}</ItemTitle>
+                <ItemDescription>
+                  {dueCount} topic{dueCount === 1 ? '' : 's'} due for review
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/review/${deck.id}`}>Review</Link>
                 </Button>
-              </CardContent>
-            </Card>
+              </ItemActions>
+            </Item>
           ))}
         </div>
       )}
