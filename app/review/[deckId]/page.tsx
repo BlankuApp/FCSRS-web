@@ -10,6 +10,7 @@ import { Card as CardUI, CardContent, CardDescription, CardHeader, CardTitle } f
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import MarkdownRenderer from '@/components/markdown-renderer';
+import EditCardDialog from '@/components/edit-card-dialog';
 
 export default function DeckReviewPage() {
   const { user, loading: authLoading } = useAuth();
@@ -31,6 +32,7 @@ export default function DeckReviewPage() {
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
   const [reviewComplete, setReviewComplete] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -122,6 +124,55 @@ export default function DeckReviewPage() {
     }
   };
 
+  const handleEditCard = () => {
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = async () => {
+    // Refetch the current card's topic to get updated data
+    try {
+      const topicData = await apiClient.getTopic(currentCard.topic_id);
+      const updatedCard = topicData.cards[currentCard.card_index];
+      
+      // Update the current card in the cards array
+      setCards(prevCards => {
+        const newCards = [...prevCards];
+        newCards[currentIndex] = {
+          ...newCards[currentIndex],
+          card_type: updatedCard.card_type,
+          card_data: updatedCard.card_data,
+          intrinsic_weight: updatedCard.intrinsic_weight,
+        };
+        return shuffleMultipleChoiceCards(newCards);
+      });
+      
+      // Reset view state
+      setShowAnswer(false);
+      setShowHint(false);
+      setSelectedChoice(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to refresh card data');
+    }
+  };
+
+  const handleEditDelete = async () => {
+    // Move to next card or show completion
+    if (currentIndex + 1 < cards.length) {
+      setCurrentIndex(prev => prev + 1);
+      setShowHint(false);
+      setShowAnswer(false);
+      setSelectedChoice(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const remainingDue = totalDue - cards.length;
+      if (remainingDue > 0) {
+        await fetchNextBatch();
+      } else {
+        setReviewComplete(true);
+      }
+    }
+  };
+
   const handleSubmitReview = async (baseScore: 0 | 1 | 2 | 3) => {
     if (!cards[currentIndex]) return;
 
@@ -208,12 +259,6 @@ export default function DeckReviewPage() {
   if (reviewComplete) {
     return (
       <div className="container mx-auto p-4 max-w-2xl">
-        <div className="mb-4">
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/dashboard">← Back to Dashboard</Link>
-          </Button>
-        </div>
-
         <CardUI>
           <CardHeader>
             <CardTitle>Review Complete! 🎉</CardTitle>
@@ -261,6 +306,15 @@ export default function DeckReviewPage() {
           <AlertDescription>Loading next batch of cards...</AlertDescription>
         </Alert>
       )}
+
+      <div className="mb-4 flex justify-between items-center">
+        <div className="text-sm text-muted-foreground">
+          Card {currentIndex + 1} of {cards.length} | Due: {totalDue} | Reviewed: {totalReviewed}
+        </div>
+        <Button variant="outline" size="sm" onClick={handleEditCard}>
+          Edit Card
+        </Button>
+      </div>
 
       <div>
         <CardContent className="space-y-4">
@@ -407,6 +461,16 @@ export default function DeckReviewPage() {
           )}
         </CardContent>
       </div>
+
+      <EditCardDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={handleEditSuccess}
+        onDelete={handleEditDelete}
+        card={currentCard ? { card_type: currentCard.card_type, card_data: currentCard.card_data, intrinsic_weight: currentCard.intrinsic_weight } : null}
+        cardIndex={currentCard?.card_index ?? null}
+        topicId={currentCard?.topic_id || ''}
+      />
     </div>
   );
 }

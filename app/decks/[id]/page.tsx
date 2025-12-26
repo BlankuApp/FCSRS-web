@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import EmptyState from '@/components/empty-state';
 import MarkdownRenderer from '@/components/markdown-renderer';
@@ -50,6 +52,11 @@ export default function DeckDetailPage() {
 
   // Success message state
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Edit generated card state
+  const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<GeneratedCard | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -104,6 +111,68 @@ export default function DeckDetailPage() {
 
   const handleRemoveCard = (index: number) => {
     setGeneratedCards(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditCard = (index: number) => {
+    const card = generatedCards[index];
+    setEditingCardIndex(index);
+    setEditFormData({
+      ...card,
+      choices: card.choices ? [...card.choices] : undefined,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEditedCard = () => {
+    if (editingCardIndex !== null && editFormData) {
+      // Validate multiple choice cards
+      if (editFormData.card_type === 'multiple_choice') {
+        const filteredChoices = editFormData.choices?.filter(c => c.trim()) || [];
+        if (filteredChoices.length < 2) {
+          setError('Multiple choice cards must have at least 2 choices');
+          return;
+        }
+      }
+
+      setGeneratedCards(prev => {
+        const newCards = [...prev];
+        newCards[editingCardIndex] = editFormData;
+        return newCards;
+      });
+      handleCloseEditDialog();
+    }
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditingCardIndex(null);
+    setEditFormData(null);
+    setError('');
+  };
+
+  const updateEditChoice = (index: number, value: string) => {
+    if (editFormData && editFormData.choices) {
+      const newChoices = [...editFormData.choices];
+      newChoices[index] = value;
+      setEditFormData({ ...editFormData, choices: newChoices });
+    }
+  };
+
+  const addEditChoice = () => {
+    if (editFormData && editFormData.choices) {
+      setEditFormData({ ...editFormData, choices: [...editFormData.choices, ''] });
+    }
+  };
+
+  const removeEditChoice = (index: number) => {
+    if (editFormData && editFormData.choices && editFormData.choices.length > 2) {
+      const newChoices = editFormData.choices.filter((_, i) => i !== index);
+      setEditFormData({
+        ...editFormData,
+        choices: newChoices,
+        correct_index: (editFormData.correct_index || 0) >= newChoices.length ? 0 : editFormData.correct_index,
+      });
+    }
   };
 
   const handleAddTopic = async () => {
@@ -223,12 +292,6 @@ export default function DeckDetailPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">
-      <div className="mb-4">
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/decks">← Back to Decks</Link>
-        </Button>
-      </div>
-
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{deck?.name || 'Deck'}</h1>
       </div>
@@ -300,15 +363,25 @@ export default function DeckDetailPage() {
                         key={index}
                         className="bg-muted p-3 rounded-md relative"
                       >
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemoveCard(index)}
-                        >
-                          ×
-                        </Button>
-                        <div className="pr-6">
+                        <div className="absolute top-1 right-1 flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-primary"
+                            onClick={() => handleEditCard(index)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveCard(index)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                        <div className="pr-16">
                           <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary/10 text-primary mb-2">
                             {card.card_type === 'qa_hint' ? 'Q&A' : 'Multiple Choice'}
                           </span>
@@ -471,6 +544,129 @@ export default function DeckDetailPage() {
           </TabsContent>
         </Tabs>
       )}
+
+      {/* Edit Generated Card Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={handleCloseEditDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Generated Card</DialogTitle>
+            <DialogDescription>
+              Make changes to this card before adding it to the topic
+            </DialogDescription>
+          </DialogHeader>
+          {editFormData && (
+            <div className="space-y-4 py-4">
+              {editFormData.card_type === 'qa_hint' ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-question">Question (Markdown supported)</Label>
+                    <Textarea
+                      id="edit-question"
+                      value={editFormData.question}
+                      onChange={(e) => setEditFormData({ ...editFormData, question: e.target.value })}
+                      placeholder="What is the capital of France?"
+                      required
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-answer">Answer (Markdown supported)</Label>
+                    <Textarea
+                      id="edit-answer"
+                      value={editFormData.answer || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, answer: e.target.value })}
+                      placeholder="Paris"
+                      required
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-hint">Hint (optional, Markdown supported)</Label>
+                    <Textarea
+                      id="edit-hint"
+                      value={editFormData.hint || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, hint: e.target.value })}
+                      placeholder="It's a major European city"
+                      rows={2}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-mc-question">Question (Markdown supported)</Label>
+                    <Textarea
+                      id="edit-mc-question"
+                      value={editFormData.question}
+                      onChange={(e) => setEditFormData({ ...editFormData, question: e.target.value })}
+                      placeholder="What is the capital of France?"
+                      required
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Choices (Markdown supported)</Label>
+                    {editFormData.choices?.map((choice, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          value={choice}
+                          onChange={(e) => updateEditChoice(index, e.target.value)}
+                          placeholder={`Choice ${index + 1}`}
+                          required
+                        />
+                        {(editFormData.choices?.length || 0) > 2 && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removeEditChoice(index)}
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addEditChoice}
+                    >
+                      Add Choice
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-correct">Correct Answer</Label>
+                    <Select
+                      value={(editFormData.correct_index || 0).toString()}
+                      onValueChange={(value) => setEditFormData({ ...editFormData, correct_index: parseInt(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {editFormData.choices?.map((_, index) => (
+                          <SelectItem key={index} value={index.toString()}>
+                            Choice {index + 1}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseEditDialog}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEditedCard}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
