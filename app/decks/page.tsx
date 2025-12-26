@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,8 +11,7 @@ import { Deck } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/empty-state';
 import CreateDeckDialog from '@/components/create-deck-dialog';
-import EditDeckDialog from '@/components/edit-deck-dialog';
-import DeckCard from '@/components/deck-card';
+import { Item, ItemContent, ItemTitle, ItemDescription } from '@/components/ui/item';
 
 export default function DecksPage() {
   const { user, loading: authLoading } = useAuth();
@@ -19,8 +19,6 @@ export default function DecksPage() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -46,16 +44,6 @@ export default function DecksPage() {
     }
   };
 
-  const handleDeleteDeck = async (deckId: string) => {
-    await apiClient.deleteDeck(deckId);
-    fetchDecks();
-  };
-
-  const handleOpenSettings = (deck: Deck) => {
-    setEditingDeck(deck);
-    setEditDialogOpen(true);
-  };
-
   if (authLoading || !user) {
     return <Loading variant="page" />;
   }
@@ -74,14 +62,6 @@ export default function DecksPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSuccess={fetchDecks}
-      />
-
-      <EditDeckDialog
-        deck={editingDeck}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onSuccess={fetchDecks}
-        onDelete={handleDeleteDeck}
       />
 
       {loading ? (
@@ -109,11 +89,16 @@ export default function DecksPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {decks.map((deck) => (
-            <DeckCard
-              key={deck.id}
-              deck={deck}
-              onOpenSettings={handleOpenSettings}
-            />
+            <Item key={deck.id} variant="outline">
+              <ItemContent>
+                <ItemTitle>
+                  <Link href={`/decks/${deck.id}`}>{deck.name}</Link>
+                </ItemTitle>
+                <ItemDescription>
+                  Updated {deck.updated_at ? new Date(deck.updated_at).toLocaleDateString() : 'Recently'}
+                </ItemDescription>
+              </ItemContent>
+            </Item>
           ))}
         </div>
       )}
