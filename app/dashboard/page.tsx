@@ -19,6 +19,7 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import EmptyState from '@/components/empty-state';
+import CreateDeckDialog from '@/components/create-deck-dialog';
 
 interface DeckWithDueTopics {
   deck: Deck;
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const [deckGroups, setDeckGroups] = useState<DeckWithDueTopics[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -108,10 +110,19 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Review your due topics by deck</p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-muted-foreground">Review your due topics by deck</p>
+        </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>Create Deck</Button>
       </div>
+
+      <CreateDeckDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={(deck) => router.push(`/decks/${deck.id}`)}
+      />
 
       {error && (
         <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4">
@@ -137,8 +148,8 @@ export default function DashboardPage() {
           title="No decks yet"
           description="Create your first deck to start learning with spaced repetition."
           action={
-            <Button asChild>
-              <Link href="/decks">Create Deck</Link>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              Create Your First Deck
             </Button>
           }
         />
@@ -150,7 +161,7 @@ export default function DashboardPage() {
                 <BookOpenIcon />
               </ItemMedia>
               <ItemContent>
-                <ItemTitle>{deck.name}</ItemTitle>
+                <ItemTitle><Link href={`/decks/${deck.id}`}>{deck.name}</Link></ItemTitle>
                 <ItemDescription>
                   {dueCount === 0 ? 'No topics due' : `${dueCount} topic${dueCount === 1 ? '' : 's'} due for review`}
                 </ItemDescription>

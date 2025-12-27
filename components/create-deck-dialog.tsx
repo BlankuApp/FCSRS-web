@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 interface CreateDeckDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (deck: any) => void;
 }
 
 export default function CreateDeckDialog({ open, onOpenChange, onSuccess }: CreateDeckDialogProps) {
@@ -32,13 +32,13 @@ export default function CreateDeckDialog({ open, onOpenChange, onSuccess }: Crea
     setError('');
 
     try {
-      await apiClient.createDeck({
+      const newDeck = await apiClient.createDeck({
         name: formData.name,
         prompt: formData.prompt,
       });
       setFormData({ name: '', prompt: '' });
       onOpenChange(false);
-      onSuccess();
+      onSuccess(newDeck);
     } catch (err: any) {
       setError(err.message || 'Failed to create deck');
     } finally {

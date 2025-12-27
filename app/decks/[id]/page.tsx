@@ -77,6 +77,10 @@ export default function DeckDetailPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState<GeneratedCard | null>(null);
 
+  // Deck deletion state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -350,6 +354,23 @@ export default function DeckDetailPage() {
     }
   };
 
+  const handleDeleteDeck = async () => {
+    setIsDeleting(true);
+
+    try {
+      await apiClient.deleteDeck(deckId);
+      toast.success('Deck deleted successfully');
+      setDeleteDialogOpen(false);
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete deck');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const formatNextReview = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -445,6 +466,16 @@ export default function DeckDetailPage() {
               title="Rename deck"
             >
               <Pencil className="h-4 w-4 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={isDeleting}
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity mb-2 hover:text-destructive"
+              title="Delete deck"
+            >
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
             </Button>
           </div>
         )}
@@ -775,6 +806,34 @@ export default function DeckDetailPage() {
           </TabsContent>
         </Tabs>
       )}
+
+      {/* Delete Deck Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Deck?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the deck and all its topics and cards. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteDeck}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Generated Card Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={handleCloseEditDialog}>

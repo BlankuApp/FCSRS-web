@@ -264,7 +264,7 @@ export default function DeckPracticePage() {
       </div>
 
       <div>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 md:px-0">
           {/* Question */}
           <div className="p-3 bg-secondary rounded-lg">
             <h3 className="font-semibold mb-2">Question:</h3>
