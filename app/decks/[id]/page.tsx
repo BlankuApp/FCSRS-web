@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
@@ -14,11 +15,10 @@ import { InputGroup, InputGroupInput, InputGroupButton } from '@/components/ui/i
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { Loader2, ChevronUp, ChevronDown, Trash2, Pencil, Check, X } from 'lucide-react';
 import EmptyState from '@/components/empty-state';
 import MarkdownRenderer from '@/components/markdown-renderer';
 
@@ -41,7 +41,6 @@ export default function DeckDetailPage() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetchingTopics, setIsFetchingTopics] = useState(false);
-  const [error, setError] = useState('');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,8 +67,10 @@ export default function DeckDetailPage() {
   const [editedPrompt, setEditedPrompt] = useState('');
   const [isUpdatingPrompt, setIsUpdatingPrompt] = useState(false);
 
-  // Success message state
-  const [successMessage, setSuccessMessage] = useState('');
+  // Deck name editing state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
 
   // Edit generated card state
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
@@ -100,6 +101,12 @@ export default function DeckDetailPage() {
     }
   }, [deck]);
 
+  useEffect(() => {
+    if (deck) {
+      setEditedName(deck.name);
+    }
+  }, [deck]);
+
   const fetchDeckAndTopics = async () => {
     try {
       // Only show full loading state on initial load (when deck is not yet loaded)
@@ -125,7 +132,7 @@ export default function DeckDetailPage() {
       setHasNext(topicsData.has_next);
       setHasPrev(topicsData.has_prev);
     } catch (err: any) {
-      setError(err.message || 'Failed to load deck');
+      toast.error(err.message || 'Failed to load deck');
     } finally {
       // Only clear loading state if it was set
       if (!deck) {
@@ -139,14 +146,13 @@ export default function DeckDetailPage() {
     if (!topicName.trim() || !deck) return;
 
     setIsGenerating(true);
-    setError('');
     setGeneratedCards([]);
 
     try {
       const response = await apiClient.generateCards(deck.prompt, topicName);
       setGeneratedCards(response.cards);
     } catch (err: any) {
-      setError(err.message || 'Failed to generate cards');
+      toast.error(err.message || 'Failed to generate cards');
     } finally {
       setIsGenerating(false);
     }
@@ -172,7 +178,7 @@ export default function DeckDetailPage() {
       if (editFormData.card_type === 'multiple_choice') {
         const filteredChoices = editFormData.choices?.filter(c => c.trim()) || [];
         if (filteredChoices.length < 2) {
-          setError('Multiple choice cards must have at least 2 choices');
+          toast.error('Multiple choice cards must have at least 2 choices');
           return;
         }
       }
@@ -190,7 +196,6 @@ export default function DeckDetailPage() {
     setEditDialogOpen(false);
     setEditingCardIndex(null);
     setEditFormData(null);
-    setError('');
   };
 
   const updateEditChoice = (index: number, value: string) => {
@@ -222,7 +227,6 @@ export default function DeckDetailPage() {
     if (!topicName.trim() || generatedCards.length === 0) return;
 
     setIsAdding(true);
-    setError('');
 
     try {
       // Create the topic first
@@ -255,11 +259,10 @@ export default function DeckDetailPage() {
       // Reset form and refresh
       setTopicName('');
       setGeneratedCards([]);
-      setSuccessMessage(`Topic "${topic.name}" created with ${generatedCards.length} cards!`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      toast.success(`Topic "${topic.name}" created with ${generatedCards.length} cards!`);
       fetchDeckAndTopics();
     } catch (err: any) {
-      setError(err.message || 'Failed to add topic');
+      toast.error(err.message || 'Failed to add topic');
     } finally {
       setIsAdding(false);
     }
@@ -267,27 +270,70 @@ export default function DeckDetailPage() {
 
   const handleUpdatePrompt = async () => {
     if (!editedPrompt.trim()) {
-      setError('Prompt cannot be empty');
+      toast.error('Prompt cannot be empty');
       return;
     }
 
     if (editedPrompt.length > 2000) {
-      setError('Prompt must be 2000 characters or less');
+      toast.error('Prompt must be 2000 characters or less');
       return;
     }
 
     setIsUpdatingPrompt(true);
-    setError('');
 
     try {
       await apiClient.updateDeck(deckId, { prompt: editedPrompt });
-      setSuccessMessage('Prompt updated successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      toast.success('Prompt updated successfully!');
       await fetchDeckAndTopics();
     } catch (err: any) {
-      setError(err.message || 'Failed to update prompt');
+      toast.error(err.message || 'Failed to update prompt');
     } finally {
       setIsUpdatingPrompt(false);
+    }
+  };
+
+  const handleUpdateDeckName = async () => {
+    if (!editedName.trim()) {
+      toast.error('Deck name cannot be empty');
+      return;
+    }
+
+    if (editedName.length > 255) {
+      toast.error('Deck name must be 255 characters or less');
+      return;
+    }
+
+    if (editedName === deck?.name) {
+      setIsEditingName(false);
+      return;
+    }
+
+    setIsUpdatingName(true);
+
+    try {
+      await apiClient.updateDeck(deckId, { name: editedName });
+      toast.success('Deck name updated successfully!');
+      await fetchDeckAndTopics();
+      setIsEditingName(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update deck name');
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
+
+  const handleCancelEditName = () => {
+    setEditedName(deck?.name || '');
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleUpdateDeckName();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEditName();
     }
   };
 
@@ -300,7 +346,7 @@ export default function DeckDetailPage() {
       await apiClient.deleteTopic(topicId);
       fetchDeckAndTopics();
     } catch (err: any) {
-      setError(err.message || 'Failed to delete topic');
+      toast.error(err.message || 'Failed to delete topic');
     }
   };
 
@@ -351,14 +397,58 @@ export default function DeckDetailPage() {
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{deck?.name || 'Deck'}</h1>
+        {isEditingName ? (
+          <div className="flex items-center gap-2">
+            <Input
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onKeyDown={handleNameKeyDown}
+              placeholder="Deck name"
+              maxLength={255}
+              disabled={isUpdatingName}
+              className="text-3xl font-bold h-auto py-1 px-2"
+              autoFocus
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleUpdateDeckName}
+              disabled={!editedName.trim() || isUpdatingName}
+              className="h-10 w-10 p-0"
+              title="Save (Enter)"
+            >
+              {isUpdatingName ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Check className="h-5 w-5 text-green-600" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelEditName}
+              disabled={isUpdatingName}
+              className="h-10 w-10 p-0"
+              title="Cancel (Escape)"
+            >
+              <X className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 group">
+            <h1 className="text-3xl font-bold mb-2">{deck?.name || 'Deck'}</h1>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEditingName(true)}
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity mb-2"
+              title="Rename deck"
+            >
+              <Pencil className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </div>
+        )}
       </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {loading ? (
         <Loading variant="content" text="Loading deck..." />
@@ -372,12 +462,6 @@ export default function DeckDetailPage() {
 
           {/* Create Topic Tab */}
           <TabsContent value="create" className="space-y-4">
-            {successMessage && (
-              <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                <AlertDescription className="text-green-800 dark:text-green-200">{successMessage}</AlertDescription>
-              </Alert>
-            )}
-
             <div className="space-y-4">
               <div className="space-y-2">
                 <InputGroup>
@@ -488,12 +572,6 @@ export default function DeckDetailPage() {
 
           {/* Prompt Tab */}
           <TabsContent value="prompt" className="space-y-4">
-            {successMessage && (
-              <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                <AlertDescription className="text-green-800 dark:text-green-200">{successMessage}</AlertDescription>
-              </Alert>
-            )}
-
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="prompt">Deck Prompt</Label>
