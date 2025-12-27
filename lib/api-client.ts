@@ -178,6 +178,10 @@ class ApiClient {
     return this.request(`/review/decks/${deckId}/cards`);
   }
 
+  async getDeckPracticeCards(deckId: string): Promise<DeckReviewResponse> {
+    return this.request(`/review/decks/${deckId}/practice`);
+  }
+
   async submitCardReview(
     topicId: string,
     cardIndex: number,

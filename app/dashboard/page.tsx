@@ -162,6 +162,9 @@ export default function DashboardPage() {
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/review/${deck.id}`}>Review</Link>
                 </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/practice/${deck.id}`}>Practice</Link>
+                </Button>
               </ItemActions>
             </Item>
           ))}
