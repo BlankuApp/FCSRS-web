@@ -52,12 +52,6 @@ export default function Navigation() {
       active: pathname === '/dashboard',
     },
     {
-      href: '/decks',
-      label: 'Decks',
-      icon: BookOpen,
-      active: pathname.startsWith('/decks'),
-    },
-    {
       href: '/profile',
       label: 'Profile',
       icon: User,
