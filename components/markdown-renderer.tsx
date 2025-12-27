@@ -43,6 +43,26 @@ function extractTextFromChildren(children: any): string {
   return '';
 }
 
+// Helper function to preprocess markdown content
+// Converts single newlines to hard breaks (two spaces + newline)
+// while preserving code blocks and double newlines for paragraphs
+function preprocessMarkdown(content: string): string {
+  // Split by code blocks (triple backticks)
+  const codeBlockRegex = /(```[\s\S]*?```)/g;
+  const parts = content.split(codeBlockRegex);
+  
+  return parts.map((part, index) => {
+    // Keep code blocks (odd indices) unchanged
+    if (index % 2 === 1) {
+      return part;
+    }
+    
+    // For non-code sections, convert single newlines to hard breaks
+    // Replace single \n (not preceded or followed by another \n) with two spaces + \n
+    return part.replace(/(?<!\n)\n(?!\n)/g, '  \n');
+  }).join('');
+}
+
 export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
   // Custom component renderers with smart direction detection
   const components: Components = {
@@ -117,7 +137,7 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
         remarkPlugins={[remarkGfm]}
         components={components}
       >
-        {content}
+        {preprocessMarkdown(content)}
       </ReactMarkdown>
     </div>
   );
