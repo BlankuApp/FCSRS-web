@@ -62,17 +62,14 @@ export default function DashboardPage() {
         deckMap.get(topic.deck_id)!.push(topic);
       });
 
-      // Create deck groups with due topics
-      const groups: DeckWithDueTopics[] = [];
-      deckMap.forEach((topics, deckId) => {
-        const deck = allDecks.find((d) => d.id === deckId);
-        if (deck) {
-          groups.push({
-            deck,
-            topics,
-            dueCount: topics.length,
-          });
-        }
+      // Create deck groups for all decks
+      const groups: DeckWithDueTopics[] = allDecks.map((deck) => {
+        const topics = deckMap.get(deck.id) || [];
+        return {
+          deck,
+          topics,
+          dueCount: topics.length,
+        };
       });
 
       // Sort by due count (descending)
@@ -137,11 +134,11 @@ export default function DashboardPage() {
         </div>
       ) : deckGroups.length === 0 ? (
         <EmptyState
-          title="No reviews due"
-          description="You're all caught up! Create your first deck or wait for scheduled reviews."
+          title="No decks yet"
+          description="Create your first deck to start learning with spaced repetition."
           action={
             <Button asChild>
-              <Link href="/decks">Go to Decks</Link>
+              <Link href="/decks">Create Deck</Link>
             </Button>
           }
         />
@@ -155,11 +152,11 @@ export default function DashboardPage() {
               <ItemContent>
                 <ItemTitle>{deck.name}</ItemTitle>
                 <ItemDescription>
-                  {dueCount} topic{dueCount === 1 ? '' : 's'} due for review
+                  {dueCount === 0 ? 'No topics due' : `${dueCount} topic${dueCount === 1 ? '' : 's'} due for review`}
                 </ItemDescription>
               </ItemContent>
               <ItemActions>
-                <Button asChild size="sm" variant="outline">
+                <Button asChild size="sm" variant="outline" disabled={dueCount === 0}>
                   <Link href={`/review/${deck.id}`}>Review</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline">
