@@ -10,6 +10,7 @@ import { Deck, ReviewCardItem, DeckReviewResponse, QAHintData, MultipleChoiceDat
 import { Card as CardUI, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import MarkdownRenderer from '@/components/markdown-renderer';
 import EditCardDialog from '@/components/edit-card-dialog';
 
@@ -47,23 +48,28 @@ export default function DeckReviewPage() {
     }
   }, [user, deckId]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentIndex]);
+
+
   const shuffleMultipleChoiceCards = (cards: ReviewCardItem[]): ReviewCardItem[] => {
     return cards.map(card => {
       if (card.card_type === 'multiple_choice') {
         const mcData = card.card_data as MultipleChoiceData;
         const correctAnswer = mcData.choices[mcData.correct_index];
-        
+
         // Create array of indices and shuffle them
         const indices = mcData.choices.map((_, i) => i);
         for (let i = indices.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [indices[i], indices[j]] = [indices[j], indices[i]];
         }
-        
+
         // Reorder choices based on shuffled indices
         const shuffledChoices = indices.map(i => mcData.choices[i]);
         const newCorrectIndex = shuffledChoices.indexOf(correctAnswer);
-        
+
         return {
           ...card,
           card_data: {
@@ -81,14 +87,14 @@ export default function DeckReviewPage() {
     try {
       setLoading(true);
       setError('');
-      
+
       const [deckData, reviewData] = await Promise.all([
         apiClient.getDeck(deckId),
         apiClient.getDeckReviewCards(deckId),
       ]);
-      
+
       setDeck(deckData);
-      
+
       if (reviewData.cards.length === 0) {
         setReviewComplete(true);
       } else {
@@ -107,7 +113,7 @@ export default function DeckReviewPage() {
     try {
       setFetching(true);
       const reviewData = await apiClient.getDeckReviewCards(deckId);
-      
+
       if (reviewData.cards.length === 0) {
         setReviewComplete(true);
       } else {
@@ -134,7 +140,7 @@ export default function DeckReviewPage() {
     try {
       const topicData = await apiClient.getTopic(currentCard.topic_id);
       const updatedCard = topicData.cards[currentCard.card_index];
-      
+
       // Update the current card in the cards array
       setCards(prevCards => {
         const newCards = [...prevCards];
@@ -146,7 +152,7 @@ export default function DeckReviewPage() {
         };
         return shuffleMultipleChoiceCards(newCards);
       });
-      
+
       // Reset view state
       setShowAnswer(false);
       setShowHint(false);
@@ -179,7 +185,7 @@ export default function DeckReviewPage() {
 
     const currentCard = cards[currentIndex];
     const pairKey = `${currentCard.topic_id}:${currentCard.card_index}`;
-    
+
     // Skip if already reviewed in this session
     if (reviewedPairs.has(pairKey)) {
       // Move to next card silently
@@ -205,18 +211,17 @@ export default function DeckReviewPage() {
 
     try {
       await apiClient.submitCardReview(currentCard.topic_id, currentCard.card_index, { base_score: baseScore });
-      
+
       // Mark this pair as reviewed
       setReviewedPairs(prev => new Set(prev).add(pairKey));
       setTotalReviewed(prev => prev + 1);
-      
+
       // Move to next card
       if (currentIndex + 1 < cards.length) {
         setCurrentIndex(prev => prev + 1);
         setShowHint(false);
         setShowAnswer(false);
         setSelectedChoice(null);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         // Finished current batch
         const remainingDue = totalDue - cards.length;
@@ -283,7 +288,7 @@ export default function DeckReviewPage() {
   }
 
   return (
-    <div className="container mx-auto p-2 md:p-4">
+    <div className="container mx-auto p-2 md:p-4 max-w-3xl">
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
@@ -294,12 +299,16 @@ export default function DeckReviewPage() {
         <Loading variant="inline" text="Loading next batch of cards..." className="mb-4" />
       )}
 
-      <div className="mb-4 flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          Card {currentIndex + 1} of {cards.length} | Due: {totalDue} | Reviewed: {totalReviewed}
+      <div className="mb-3 flex items-center gap-3">
+        {/* <div className="text-xs text-muted-foreground whitespace-nowrap">
+          {currentIndex + 1}/{cards.length}
+        </div> */}
+        <div className="flex-1 flex items-center gap-2">
+          <Progress value={(totalReviewed / totalDue) * 100} className="h-1.5" />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">{totalReviewed}/{totalDue}</span>
         </div>
-        <Button variant="outline" size="sm" onClick={handleEditCard}>
-          Edit Card
+        <Button variant="ghost" size="sm" onClick={handleEditCard} className="h-7 px-2 text-xs">
+          Edit
         </Button>
       </div>
 
@@ -378,13 +387,12 @@ export default function DeckReviewPage() {
                     return (
                       <div
                         key={index}
-                        className={`p-3 rounded-lg border ${
-                          isCorrect
+                        className={`p-3 rounded-lg border ${isCorrect
                             ? 'bg-green-50 dark:bg-green-950 border-green-500'
                             : isSelected
-                            ? 'bg-red-50 dark:bg-red-950 border-red-500'
-                            : 'bg-secondary border-border'
-                        }`}
+                              ? 'bg-red-50 dark:bg-red-950 border-red-500'
+                              : 'bg-secondary border-border'
+                          }`}
                       >
                         <div className="flex items-start gap-2">
                           <span className="font-semibold">{String.fromCharCode(65 + index)}.</span>
