@@ -8,7 +8,8 @@ import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { apiClient } from '@/lib/api-client';
 import { Deck, Topic, TopicListResponse } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InputGroup, InputGroupInput, InputGroupButton } from '@/components/ui/input-group';
@@ -529,64 +530,82 @@ export default function DeckDetailPage() {
                 <div className="space-y-3">
                   <Label>Generated Cards ({generatedCards.length})</Label>
                   <div className="space-y-2 overflow-y-auto border rounded-md p-3">
-                    {generatedCards.map((card, index) => (
-                      <div
-                        key={index}
-                        className="bg-muted p-3 rounded-md relative"
-                      >
-                        <div className="absolute top-1 right-1 flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-xs text-muted-foreground hover:text-primary"
-                            onClick={() => handleEditCard(index)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleRemoveCard(index)}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                        <div className="pr-16">
-                          <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary/10 text-primary mb-2">
-                            {card.card_type === 'qa_hint' ? 'Q&A' : 'Multiple Choice'}
-                          </span>
-                          <div className="text-sm">
-                            <MarkdownRenderer content={card.question} />
-                          </div>
-                          {card.card_type === 'qa_hint' ? (
-                            <div className="mt-1 text-sm text-muted-foreground space-y-1">
-                              <div>
-                                <strong>Answer:</strong>
-                                <MarkdownRenderer content={card.answer || ''} />
-                              </div>
-                              {card.hint && (
-                                <div>
-                                  <strong>Hint:</strong>
-                                  <MarkdownRenderer content={card.hint} />
+                    <TooltipProvider>
+                      {generatedCards.map((card, index) => (
+                        <Card
+                          key={index}
+                          className="bg-muted border-0 shadow-none py-3 gap-2"
+                        >
+                          <CardHeader className="px-3 py-0 gap-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary/10 text-primary mb-2">
+                                  {card.card_type === 'qa_hint' ? 'Q&A' : 'Multiple Choice'}
+                                </span>
+                                <div className="text-sm">
+                                  <MarkdownRenderer content={card.question} />
                                 </div>
-                              )}
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                      onClick={() => handleEditCard(index)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit card</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                      onClick={() => handleRemoveCard(index)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Delete card</TooltipContent>
+                                </Tooltip>
+                              </div>
                             </div>
-                          ) : (
-                            <div className="mt-1 text-sm text-muted-foreground">
-                              <p><strong>Choices:</strong></p>
-                              <ul className="list-disc list-inside">
-                                {card.choices?.map((choice, i) => (
-                                  <li key={i} className={i === card.correct_index ? 'text-green-600 font-medium' : ''}>
-                                    {choice} {i === card.correct_index && '✓'}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                          </CardHeader>
+                          <CardContent className="px-3 py-0">
+                            {card.card_type === 'qa_hint' ? (
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <div>
+                                  <strong>Answer:</strong>
+                                  <MarkdownRenderer content={card.answer || ''} />
+                                </div>
+                                {card.hint && (
+                                  <div>
+                                    <strong>Hint:</strong>
+                                    <MarkdownRenderer content={card.hint} />
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-muted-foreground">
+                                <p><strong>Choices:</strong></p>
+                                <ul className="list-disc list-inside">
+                                  {card.choices?.map((choice, i) => (
+                                    <li key={i} className={i === card.correct_index ? 'text-green-600 font-medium' : ''}>
+                                      {choice} {i === card.correct_index && '✓'}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </TooltipProvider>
                   </div>
 
                   <Button

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpenIcon } from 'lucide-react';
+import { BookOpenIcon, RotateCcw, Dumbbell } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -158,7 +158,9 @@ export default function DashboardPage() {
           {deckGroups.map(({ deck, topics, dueCount }) => (
             <Item key={deck.id} variant="outline">
               <ItemMedia variant="icon">
-                <BookOpenIcon />
+                <Link href={`/decks/${deck.id}`} className="p-2 -m-2 rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary hover:scale-110 active:scale-95">
+                  <BookOpenIcon />
+                </Link>
               </ItemMedia>
               <ItemContent>
                 <ItemTitle><Link href={`/decks/${deck.id}`}>{deck.name}</Link></ItemTitle>
@@ -167,11 +169,17 @@ export default function DashboardPage() {
                 </ItemDescription>
               </ItemContent>
               <ItemActions>
-                <Button asChild size="sm" variant="outline" disabled={dueCount === 0}>
-                  <Link href={`/review/${deck.id}`}>Review</Link>
+                <Button asChild size="sm" variant="outline" disabled={dueCount === 0} className="gap-1.5 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 disabled:opacity-50">
+                  <Link href={`/review/${deck.id}`}>
+                    <RotateCcw className="h-4 w-4" />
+                    <span className="hidden sm:inline">Review</span>
+                  </Link>
                 </Button>
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/practice/${deck.id}`}>Practice</Link>
+                <Button asChild size="sm" variant="outline" className="gap-1.5 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950">
+                  <Link href={`/practice/${deck.id}`}>
+                    <Dumbbell className="h-4 w-4" />
+                    <span className="hidden sm:inline">Practice</span>
+                  </Link>
                 </Button>
               </ItemActions>
             </Item>

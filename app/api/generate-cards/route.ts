@@ -29,7 +29,7 @@ You must return a JSON object with a "cards" array. Each card must be one of two
   "card_type": "qa_hint",
   "question": "The question text (can include markdown formatting)",
   "answer": "The answer text (should include markdown formatting)",
-  "hint": "A helpful hint"
+  "hint": "" // Optional hint text (can include markdown formatting)
 }
 
 2. Multiple Choice (multiple_choice):
@@ -56,7 +56,7 @@ Generate flashcards for this topic based on the instructions.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.1',
+        model: 'gpt-5.2',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },

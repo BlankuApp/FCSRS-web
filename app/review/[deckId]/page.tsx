@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { Pencil, ExternalLink, Lightbulb, RotateCcw, Flame, ThumbsUp, Sparkles, Check, X, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { apiClient } from '@/lib/api-client';
@@ -11,6 +12,7 @@ import { Card as CardUI, CardContent, CardDescription, CardHeader, CardTitle } f
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import MarkdownRenderer from '@/components/markdown-renderer';
 import EditCardDialog from '@/components/edit-card-dialog';
 
@@ -28,7 +30,6 @@ export default function DeckReviewPage() {
   const [reviewedPairs, setReviewedPairs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showHint, setShowHint] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
@@ -120,7 +121,6 @@ export default function DeckReviewPage() {
         setCards(shuffleMultipleChoiceCards(reviewData.cards));
         setTotalDue(reviewData.total_due);
         setCurrentIndex(0);
-        setShowHint(false);
         setShowAnswer(false);
         setSelectedChoice(null);
       }
@@ -155,7 +155,6 @@ export default function DeckReviewPage() {
 
       // Reset view state
       setShowAnswer(false);
-      setShowHint(false);
       setSelectedChoice(null);
     } catch (err: any) {
       setError(err.message || 'Failed to refresh card data');
@@ -166,7 +165,6 @@ export default function DeckReviewPage() {
     // Move to next card or show completion
     if (currentIndex + 1 < cards.length) {
       setCurrentIndex(prev => prev + 1);
-      setShowHint(false);
       setShowAnswer(false);
       setSelectedChoice(null);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -191,7 +189,6 @@ export default function DeckReviewPage() {
       // Move to next card silently
       if (currentIndex + 1 < cards.length) {
         setCurrentIndex(prev => prev + 1);
-        setShowHint(false);
         setShowAnswer(false);
         setSelectedChoice(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -219,7 +216,6 @@ export default function DeckReviewPage() {
       // Move to next card
       if (currentIndex + 1 < cards.length) {
         setCurrentIndex(prev => prev + 1);
-        setShowHint(false);
         setShowAnswer(false);
         setSelectedChoice(null);
       } else {
@@ -300,46 +296,50 @@ export default function DeckReviewPage() {
       )}
 
       <div className="mb-3 flex items-center gap-3">
-        {/* <div className="text-xs text-muted-foreground whitespace-nowrap">
-          {currentIndex + 1}/{cards.length}
-        </div> */}
         <div className="flex-1 flex items-center gap-2">
           <Progress value={(totalReviewed / totalDue) * 100} className="h-1.5" />
           <span className="text-xs text-muted-foreground whitespace-nowrap">{totalReviewed}/{totalDue}</span>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleEditCard} className="h-7 px-2 text-xs">
-          Edit
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={handleEditCard} className="h-7 px-2 text-xs gap-1">
+            <Pencil className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Edit</span>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="h-7 px-2 text-xs gap-1">
+            <Link href={`/topics/${currentCard.topic_id}`}>
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Topic</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div>
         <CardContent className="space-y-4 md:px-0">
           {/* Question */}
           <div className="p-3 bg-secondary rounded-lg">
-            <h3 className="font-semibold mb-2">Question:</h3>
             <MarkdownRenderer content={currentCard.card_data.question} />
+            
+            {/* Hint (for QA cards only) */}
+            {currentCard.card_type === 'qa_hint' && (currentCard.card_data as QAHintData).hint && !showAnswer && (
+              <Accordion type="single" collapsible className="mt-3 border-t border-blue-200 dark:border-blue-800 pt-2">
+                <AccordionItem value="hint" className="border-b-0">
+                  <AccordionTrigger className="py-2 dark:text-blue-400 hover:no-underline">
+                    <span className="font-semibold flex items-center gap-1.5"><Lightbulb className="h-4 w-4" /> Hint</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-0">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <MarkdownRenderer content={(currentCard.card_data as QAHintData).hint} />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
           </div>
-
-          {/* Hint (for QA cards only) */}
-          {currentCard.card_type === 'qa_hint' && (currentCard.card_data as QAHintData).hint && !showAnswer && (
-            <div>
-              {!showHint ? (
-                <Button variant="outline" size="sm" onClick={() => setShowHint(true)}>
-                  Show Hint
-                </Button>
-              ) : (
-                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <h3 className="font-semibold mb-2">Hint:</h3>
-                  <MarkdownRenderer content={(currentCard.card_data as QAHintData).hint} />
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Multiple Choice Options */}
           {currentCard.card_type === 'multiple_choice' && !showAnswer && (
             <div className="space-y-2">
-              <h3 className="font-semibold">Choices:</h3>
               {(currentCard.card_data as MultipleChoiceData).choices.map((choice, index) => (
                 <Button
                   key={index}
@@ -362,9 +362,10 @@ export default function DeckReviewPage() {
           {!showAnswer && (
             <Button
               onClick={() => setShowAnswer(true)}
-              className="w-full"
+              className="w-full gap-2"
               disabled={currentCard.card_type === 'multiple_choice' && selectedChoice === null}
             >
+              <Eye className="h-4 w-4" />
               Show Answer
             </Button>
           )}
@@ -374,12 +375,10 @@ export default function DeckReviewPage() {
             <>
               {currentCard.card_type === 'qa_hint' ? (
                 <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                  <h3 className="font-semibold mb-2">Answer:</h3>
                   <MarkdownRenderer content={(currentCard.card_data as QAHintData).answer} />
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <h3 className="font-semibold">Result:</h3>
                   {(currentCard.card_data as MultipleChoiceData).choices.map((choice, index) => {
                     const isCorrect = index === (currentCard.card_data as MultipleChoiceData).correct_index;
                     const isSelected = index === selectedChoice;
@@ -399,9 +398,9 @@ export default function DeckReviewPage() {
                           <div className="flex-1">
                             <MarkdownRenderer content={choice} />
                           </div>
-                          {isCorrect && <span className="text-green-600 dark:text-green-400">✓</span>}
+                          {isCorrect && <Check className="h-4 w-4 text-green-600 dark:text-green-400" />}
                           {isSelected && !isCorrect && (
-                            <span className="text-red-600 dark:text-red-400">✗</span>
+                            <X className="h-4 w-4 text-red-600 dark:text-red-400" />
                           )}
                         </div>
                       </div>
@@ -413,42 +412,46 @@ export default function DeckReviewPage() {
               {/* Rating Buttons */}
               <div>
                 <h3 className="font-semibold mb-2">How well did you remember?</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
+                <div className="grid grid-cols-4 gap-1">
                   <Button
                     variant="outline"
                     className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 border-red-200 dark:border-red-800"
                     onClick={() => handleSubmitReview(0)}
                     disabled={submitting}
                   >
-                    <span className="font-semibold">Again</span>
-                    <span className="text-xs text-muted-foreground">Forgot</span>
+                    <RotateCcw className="h-4 w-4" />
+                    <span className="font-semibold hidden sm:inline">Again</span>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">Forgot</span>
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-auto py-3 px-4 flex flex-col items-center gap-1 bg-orange-50 hover:bg-orange-100 dark:bg-orange-950 dark:hover:bg-orange-900 border-orange-200 dark:border-orange-800"
+                    className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-orange-50 hover:bg-orange-100 dark:bg-orange-950 dark:hover:bg-orange-900 border-orange-200 dark:border-orange-800"
                     onClick={() => handleSubmitReview(1)}
                     disabled={submitting}
                   >
-                    <span className="font-semibold">Hard</span>
-                    <span className="text-xs text-muted-foreground">Difficult</span>
+                    <Flame className="h-4 w-4" />
+                    <span className="font-semibold hidden sm:inline">Hard</span>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">Difficult</span>
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-auto py-3 px-4 flex flex-col items-center gap-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800"
+                    className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800"
                     onClick={() => handleSubmitReview(2)}
                     disabled={submitting}
                   >
-                    <span className="font-semibold">Good</span>
-                    <span className="text-xs text-muted-foreground">Normal</span>
+                    <ThumbsUp className="h-4 w-4" />
+                    <span className="font-semibold hidden sm:inline">Good</span>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">Normal</span>
                   </Button>
                   <Button
                     variant="outline"
-                    className="h-auto py-3 px-4 flex flex-col items-center gap-1 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900 border-green-200 dark:border-green-800"
+                    className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900 border-green-200 dark:border-green-800"
                     onClick={() => handleSubmitReview(3)}
                     disabled={submitting}
                   >
-                    <span className="font-semibold">Easy</span>
-                    <span className="text-xs text-muted-foreground">Perfect</span>
+                    <Sparkles className="h-4 w-4" />
+                    <span className="font-semibold hidden sm:inline">Easy</span>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">Perfect</span>
                   </Button>
                 </div>
               </div>
