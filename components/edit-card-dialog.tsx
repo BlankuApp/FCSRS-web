@@ -12,6 +12,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+// Interface for generated cards (before being saved to database)
+export interface GeneratedCard {
+  card_type: 'qa_hint' | 'multiple_choice';
+  question: string;
+  answer?: string;
+  hint?: string;
+  choices?: string[];
+  correct_index?: number;
+}
+
 interface EditCardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -20,6 +30,10 @@ interface EditCardDialogProps {
   card: CardItem | null;
   cardIndex: number | null;
   topicId: string;
+  // For editing generated cards (not yet saved to database)
+  generatedCard?: GeneratedCard | null;
+  generatedCardIndex?: number | null;
+  onSaveGenerated?: (index: number, card: GeneratedCard) => void;
 }
 
 export default function EditCardDialog({
@@ -30,6 +44,9 @@ export default function EditCardDialog({
   card,
   cardIndex,
   topicId,
+  generatedCard,
+  generatedCardIndex,
+  onSaveGenerated,
 }: EditCardDialogProps) {
   const [cardType, setCardType] = useState<'qa_hint' | 'multiple_choice'>('qa_hint');
   const [submitting, setSubmitting] = useState(false);
@@ -39,6 +56,7 @@ export default function EditCardDialog({
   const [mcFormData, setMcFormData] = useState({ question: '', choices: ['', ''], correct_index: 0, intrinsic_weight: 1.0 });
 
   const isEditMode = card !== null && cardIndex !== null;
+  const isGeneratedCardMode = generatedCard !== null && generatedCard !== undefined && generatedCardIndex !== null && generatedCardIndex !== undefined;
 
   // Initialize form when card changes
   useEffect(() => {
@@ -62,16 +80,62 @@ export default function EditCardDialog({
           intrinsic_weight: card.intrinsic_weight,
         });
       }
+    } else if (generatedCard) {
+      // Initialize from generated card
+      setCardType(generatedCard.card_type);
+      
+      if (generatedCard.card_type === 'qa_hint') {
+        setQaFormData({
+          question: generatedCard.question,
+          answer: generatedCard.answer || '',
+          hint: generatedCard.hint || '',
+          intrinsic_weight: 1.0,
+        });
+      } else {
+        setMcFormData({
+          question: generatedCard.question,
+          choices: generatedCard.choices ? [...generatedCard.choices] : ['', ''],
+          correct_index: generatedCard.correct_index || 0,
+          intrinsic_weight: 1.0,
+        });
+      }
     } else {
       // Reset for create mode
       setCardType('qa_hint');
       setQaFormData({ question: '', answer: '', hint: '', intrinsic_weight: 1.0 });
       setMcFormData({ question: '', choices: ['', ''], correct_index: 0, intrinsic_weight: 1.0 });
     }
-  }, [card]);
+  }, [card, generatedCard]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Handle generated card mode (no API call, just update state)
+    if (isGeneratedCardMode && onSaveGenerated) {
+      if (cardType === 'qa_hint') {
+        onSaveGenerated(generatedCardIndex!, {
+          card_type: 'qa_hint',
+          question: qaFormData.question,
+          answer: qaFormData.answer,
+          hint: qaFormData.hint || undefined,
+        });
+      } else {
+        const filteredChoices = mcFormData.choices.filter(c => c.trim());
+        if (filteredChoices.length < 2) {
+          toast.error('Multiple choice cards must have at least 2 choices');
+          return;
+        }
+        onSaveGenerated(generatedCardIndex!, {
+          card_type: 'multiple_choice',
+          question: mcFormData.question,
+          choices: filteredChoices,
+          correct_index: mcFormData.correct_index,
+        });
+      }
+      onOpenChange(false);
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
@@ -194,9 +258,15 @@ export default function EditCardDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{isEditMode ? 'Edit Card' : 'Create New Card'}</DialogTitle>
+            <DialogTitle>
+              {isGeneratedCardMode ? 'Edit Generated Card' : isEditMode ? 'Edit Card' : 'Create New Card'}
+            </DialogTitle>
             <DialogDescription>
-              {isEditMode ? 'Update the flashcard details' : 'Add a new flashcard to this topic'}
+              {isGeneratedCardMode 
+                ? 'Make changes to this card before adding it to the topic'
+                : isEditMode 
+                  ? 'Update the flashcard details' 
+                  : 'Add a new flashcard to this topic'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -205,7 +275,7 @@ export default function EditCardDialog({
               <Select 
                 value={cardType} 
                 onValueChange={(value: any) => setCardType(value)}
-                disabled={isEditMode}
+                disabled={isEditMode || isGeneratedCardMode}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -352,7 +422,7 @@ export default function EditCardDialog({
             )}
           </div>
           <DialogFooter className="gap-2">
-            {isEditMode && (
+            {isEditMode && !isGeneratedCardMode && (
               <Button
                 type="button"
                 variant="destructive"
@@ -376,7 +446,7 @@ export default function EditCardDialog({
                   {isEditMode ? 'Updating...' : 'Creating...'}
                 </>
               ) : (
-                isEditMode ? 'Update Card' : 'Create Card'
+                isGeneratedCardMode ? 'Save Changes' : isEditMode ? 'Update Card' : 'Create Card'
               )}
             </Button>
           </DialogFooter>

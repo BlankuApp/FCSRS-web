@@ -2,17 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import { Loader2, Trash2, Pencil, ArrowLeft, Check, X } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api-client';
-import { Topic, CardItem, QAHintData, MultipleChoiceData } from '@/lib/types';
+import { Topic, Deck, CardItem, QAHintData, MultipleChoiceData } from '@/lib/types';
 import { Card as CardUI, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import EmptyState from '@/components/empty-state';
 import MarkdownRenderer from '@/components/markdown-renderer';
-import EditCardDialog from '@/components/edit-card-dialog';
+import EditCardDialog, { GeneratedCard } from '@/components/edit-card-dialog';
 
 export default function TopicDetailPage() {
   const { user, loading: authLoading } = useAuth();
@@ -21,10 +28,33 @@ export default function TopicDetailPage() {
   const topicId = params.id as string;
 
   const [topic, setTopic] = useState<Topic | null>(null);
+  const [deck, setDeck] = useState<Deck | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeckLoading, setIsDeckLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Dialog states for existing cards
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<{ card: CardItem; index: number } | null>(null);
+  
+  // Generated cards states
+  const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [editingGeneratedCardIndex, setEditingGeneratedCardIndex] = useState<number | null>(null);
+  const [generatedCardDialogOpen, setGeneratedCardDialogOpen] = useState(false);
+  
+  // Mode selection dialog state
+  const [showModeDialog, setShowModeDialog] = useState(false);
+  const [isAddingCards, setIsAddingCards] = useState(false);
+
+  // Topic name editing state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+
+  // Topic deletion state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -38,6 +68,20 @@ export default function TopicDetailPage() {
     }
   }, [user, topicId]);
 
+  // Fetch deck when topic loads
+  useEffect(() => {
+    if (topic?.deck_id) {
+      fetchDeck(topic.deck_id);
+    }
+  }, [topic?.deck_id]);
+
+  // Sync edited name with topic name
+  useEffect(() => {
+    if (topic) {
+      setEditedName(topic.name);
+    }
+  }, [topic]);
+
   const fetchTopic = async () => {
     try {
       setLoading(true);
@@ -50,6 +94,20 @@ export default function TopicDetailPage() {
     }
   };
 
+  const fetchDeck = async (deckId: string) => {
+    try {
+      setIsDeckLoading(true);
+      const deckData = await apiClient.getDeck(deckId);
+      setDeck(deckData);
+    } catch (err: any) {
+      // Silently fail - deck info is optional for display
+      console.error('Failed to load deck:', err);
+    } finally {
+      setIsDeckLoading(false);
+    }
+  };
+
+  // === Existing card handlers ===
   const handleEditCard = (index: number, card: CardItem) => {
     setEditingCard({ card, index });
     setDialogOpen(true);
@@ -71,37 +129,384 @@ export default function TopicDetailPage() {
     fetchTopic();
   };
 
+  // === Generated cards handlers ===
+  const handleGenerateCards = async () => {
+    if (!topic || !deck?.prompt) return;
+
+    setIsGenerating(true);
+    setGeneratedCards([]);
+
+    try {
+      const response = await apiClient.generateCards(deck.prompt, topic.name);
+      setGeneratedCards(response.cards);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to generate cards');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRemoveGeneratedCard = (index: number) => {
+    setGeneratedCards(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditGeneratedCard = (index: number) => {
+    setEditingGeneratedCardIndex(index);
+    setGeneratedCardDialogOpen(true);
+  };
+
+  const handleSaveGeneratedCard = (index: number, card: GeneratedCard) => {
+    setGeneratedCards(prev => {
+      const newCards = [...prev];
+      newCards[index] = card;
+      return newCards;
+    });
+  };
+
+  const handleGeneratedCardDialogClose = (open: boolean) => {
+    setGeneratedCardDialogOpen(open);
+    if (!open) {
+      setEditingGeneratedCardIndex(null);
+    }
+  };
+
+  const handleShowModeDialog = () => {
+    if (generatedCards.length === 0) return;
+    setShowModeDialog(true);
+  };
+
+  const handleAddGeneratedCards = async (mode: 'append' | 'replace') => {
+    if (generatedCards.length === 0) return;
+
+    setIsAddingCards(true);
+
+    try {
+      await apiClient.addCardsBatchToTopic(topicId, {
+        cards: generatedCards.map(card => {
+          if (card.card_type === 'qa_hint') {
+            return {
+              card_type: 'qa_hint' as const,
+              question: card.question,
+              answer: card.answer || '',
+              hint: card.hint || '',
+            };
+          } else {
+            return {
+              card_type: 'multiple_choice' as const,
+              question: card.question,
+              choices: card.choices || [],
+              correct_index: card.correct_index || 0,
+            };
+          }
+        }),
+        mode,
+      });
+
+      const action = mode === 'replace' ? 'replaced with' : 'added';
+      toast.success(`Cards ${action} successfully! (${generatedCards.length} cards)`);
+      setGeneratedCards([]);
+      setShowModeDialog(false);
+      fetchTopic();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add cards');
+    } finally {
+      setIsAddingCards(false);
+    }
+  };
+
+  // === Topic name editing handlers ===
+  const handleUpdateTopicName = async () => {
+    if (!editedName.trim()) {
+      toast.error('Topic name cannot be empty');
+      return;
+    }
+
+    if (editedName.length > 255) {
+      toast.error('Topic name must be 255 characters or less');
+      return;
+    }
+
+    if (editedName === topic?.name) {
+      setIsEditingName(false);
+      return;
+    }
+
+    setIsUpdatingName(true);
+
+    try {
+      await apiClient.updateTopic(topicId, { name: editedName });
+      toast.success('Topic name updated successfully!');
+      await fetchTopic();
+      setIsEditingName(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update topic name');
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
+
+  const handleCancelEditName = () => {
+    setEditedName(topic?.name || '');
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleUpdateTopicName();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEditName();
+    }
+  };
+
+  // === Topic deletion handler ===
+  const handleDeleteTopic = async () => {
+    setIsDeleting(true);
+
+    try {
+      await apiClient.deleteTopic(topicId);
+      toast.success('Topic deleted successfully');
+      setDeleteDialogOpen(false);
+      if (topic?.deck_id) {
+        router.push(`/decks/${topic.deck_id}`);
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete topic');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (authLoading || !user) {
     return <Loading variant="page" />;
   }
 
+  const currentGeneratedCard = editingGeneratedCardIndex !== null ? generatedCards[editingGeneratedCardIndex] : null;
+
   return (
     <div className="container mx-auto p-4 max-w-6xl">
-      <div className="flex justify-between items-center mb-8">
+      {/* Back link */}
+      {topic?.deck_id && (
+        <Link 
+          href={`/decks/${topic.deck_id}`} 
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Deck
+        </Link>
+      )}
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">{topic?.name || 'Topic'}</h1>
+          {isEditingName ? (
+            <div className="flex items-center gap-2 mb-2">
+              <Input
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                onKeyDown={handleNameKeyDown}
+                placeholder="Topic name"
+                maxLength={255}
+                disabled={isUpdatingName}
+                className="text-3xl font-bold h-auto py-1 px-2"
+                autoFocus
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleUpdateTopicName}
+                disabled={!editedName.trim() || isUpdatingName}
+                className="h-10 w-10 p-0"
+                title="Save (Enter)"
+              >
+                {isUpdatingName ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Check className="h-5 w-5 text-green-600" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelEditName}
+                disabled={isUpdatingName}
+                className="h-10 w-10 p-0"
+                title="Cancel (Escape)"
+              >
+                <X className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group mb-2">
+              <h1 className="text-3xl font-bold">{topic?.name || 'Topic'}</h1>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingName(true)}
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Rename topic"
+              >
+                <Pencil className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={isDeleting}
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                title="Delete topic"
+              >
+                <Trash2 className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
+          )}
           <p className="text-muted-foreground">
             Difficulty: {topic?.difficulty.toFixed(1)} | Stability: {Math.round(topic?.stability || 0)}h
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
-          <DialogTrigger asChild>
-            <Button onClick={handleCreateCard}>Create Card</Button>
-          </DialogTrigger>
-        </Dialog>
-        <EditCardDialog
-          open={dialogOpen}
-          onOpenChange={handleDialogClose}
-          onSuccess={handleSuccess}
-          card={editingCard?.card || null}
-          cardIndex={editingCard?.index ?? null}
-          topicId={topicId}
-        />
+        <div className="flex gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="outline"
+                    onClick={handleGenerateCards}
+                    disabled={isGenerating || isDeckLoading || !deck?.prompt}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : isDeckLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Regenerate Cards'
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!isDeckLoading && !deck?.prompt && (
+                <TooltipContent>
+                  <p>Deck prompt is required for card generation</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          <Button onClick={handleCreateCard}>Create Card</Button>
+        </div>
       </div>
+
+      {/* Prompt missing warning */}
+      {!isDeckLoading && deck && !deck.prompt && (
+        <Alert className="mb-6">
+          <AlertDescription>
+            Card regeneration requires a deck prompt.{' '}
+            <Link href={`/decks/${deck.id}`} className="text-primary hover:underline font-medium">
+              Set up the prompt in deck settings →
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {error && (
         <div className="bg-destructive/10 text-destructive p-4 rounded-md mb-4">
           {error}
+        </div>
+      )}
+
+      {/* Generated Cards Preview */}
+      {generatedCards.length > 0 && (
+        <div className="space-y-3 mb-8">
+          <Label>Generated Cards ({generatedCards.length})</Label>
+          <div className="space-y-2 overflow-y-auto border rounded-md p-3 max-h-[500px]">
+            <TooltipProvider>
+              {generatedCards.map((card, index) => (
+                <CardUI
+                  key={index}
+                  className="bg-muted border-0 shadow-none py-3 gap-2"
+                >
+                  <CardHeader className="px-3 py-0 gap-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-primary/10 text-primary mb-2">
+                          {card.card_type === 'qa_hint' ? 'Q&A' : 'Multiple Choice'}
+                        </span>
+                        <div className="text-sm font-medium">
+                          <MarkdownRenderer content={card.question} />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEditGeneratedCard(index)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Edit card</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit card</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 hover:text-destructive"
+                              onClick={() => handleRemoveGeneratedCard(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Remove card</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Remove card</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-3 py-0">
+                    {card.card_type === 'qa_hint' ? (
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p><span className="font-medium">Answer:</span> <MarkdownRenderer content={card.answer || ''} className="inline" /></p>
+                        {card.hint && (
+                          <p><span className="font-medium">Hint:</span> <MarkdownRenderer content={card.hint} className="inline" /></p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        <p className="font-medium mb-1">Choices:</p>
+                        <ul className="list-decimal list-inside space-y-0.5">
+                          {card.choices?.map((choice, choiceIndex) => (
+                            <li key={choiceIndex} className={choiceIndex === card.correct_index ? 'text-green-600 font-medium' : ''}>
+                              {choice} {choiceIndex === card.correct_index && '✓'}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </CardUI>
+              ))}
+            </TooltipProvider>
+          </div>
+
+          <Button
+            onClick={handleShowModeDialog}
+            disabled={generatedCards.length === 0 || isAddingCards}
+            className="w-full"
+          >
+            Add {generatedCards.length} Cards to Topic
+          </Button>
         </div>
       )}
 
@@ -125,86 +530,204 @@ export default function TopicDetailPage() {
           ))}
         </div>
       ) : !topic || topic.cards.length === 0 ? (
-        <EmptyState
-          title="No cards yet"
-          description="Create your first flashcard for this topic"
-          action={
-            <Button onClick={handleCreateCard}>Create Your First Card</Button>
-          }
-        />
+        generatedCards.length === 0 && (
+          <EmptyState
+            title="No cards yet"
+            description="Create your first flashcard for this topic or regenerate cards using AI"
+            action={
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleGenerateCards} disabled={isGenerating || !deck?.prompt}>
+                  {isGenerating ? 'Generating...' : 'Regenerate Cards'}
+                </Button>
+                <Button onClick={handleCreateCard}>Create Card Manually</Button>
+              </div>
+            }
+          />
+        )
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {topic.cards.map((card, index) => {
-            const isQACard = card.card_type === 'qa_hint';
-            const cardData = card.card_data as QAHintData | MultipleChoiceData;
-            
-            return (
-              <CardUI key={`topic-${topicId}-card-${index}`} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {isQACard ? 'Q&A Card' : 'Multiple Choice Card'} (#{index + 1})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold mb-1">Question:</p>
-                    <MarkdownRenderer content={cardData.question} />
-                  </div>
-                  
-                  {isQACard ? (
-                    <>
-                      <div>
-                        <p className="text-sm font-semibold mb-1">Answer:</p>
-                        <MarkdownRenderer content={(cardData as QAHintData).answer} />
-                      </div>
-                      {(cardData as QAHintData).hint && (
+        <div className="space-y-4">
+          <Label>Existing Cards ({topic.cards.length})</Label>
+          <div className="grid gap-4 md:grid-cols-2">
+            {topic.cards.map((card, index) => {
+              const isQACard = card.card_type === 'qa_hint';
+              const cardData = card.card_data as QAHintData | MultipleChoiceData;
+              
+              return (
+                <CardUI key={`topic-${topicId}-card-${index}`} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {isQACard ? 'Q&A Card' : 'Multiple Choice Card'} (#{index + 1})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold mb-1">Question:</p>
+                      <MarkdownRenderer content={cardData.question} />
+                    </div>
+                    
+                    {isQACard ? (
+                      <>
                         <div>
-                          <p className="text-sm font-semibold mb-1">Hint:</p>
-                          <MarkdownRenderer content={(cardData as QAHintData).hint} />
+                          <p className="text-sm font-semibold mb-1">Answer:</p>
+                          <MarkdownRenderer content={(cardData as QAHintData).answer} />
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <p className="text-sm font-semibold mb-1">Choices:</p>
-                        <ul className="list-decimal list-inside space-y-1">
-                          {(cardData as MultipleChoiceData).choices.map((choice, choiceIndex) => (
-                            <li 
-                              key={choiceIndex} 
-                              className={choiceIndex === (cardData as MultipleChoiceData).correct_index ? 'text-green-600 font-medium' : ''}
-                            >
-                              <MarkdownRenderer content={choice} className="inline" />
-                              {choiceIndex === (cardData as MultipleChoiceData).correct_index && ' ✓'}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </>
-                  )}
-                  
-                  <div className="pt-2">
-                    <p className="text-xs text-muted-foreground">
-                      Weight: {card.intrinsic_weight}
-                    </p>
-                  </div>
+                        {(cardData as QAHintData).hint && (
+                          <div>
+                            <p className="text-sm font-semibold mb-1">Hint:</p>
+                            <MarkdownRenderer content={(cardData as QAHintData).hint} />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="text-sm font-semibold mb-1">Choices:</p>
+                          <ul className="list-decimal list-inside space-y-1">
+                            {(cardData as MultipleChoiceData).choices.map((choice, choiceIndex) => (
+                              <li 
+                                key={choiceIndex} 
+                                className={choiceIndex === (cardData as MultipleChoiceData).correct_index ? 'text-green-600 font-medium' : ''}
+                              >
+                                <MarkdownRenderer content={choice} className="inline" />
+                                {choiceIndex === (cardData as MultipleChoiceData).correct_index && ' ✓'}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </>
+                    )}
+                    
+                    <div className="pt-2">
+                      <p className="text-xs text-muted-foreground">
+                        Weight: {card.intrinsic_weight}
+                      </p>
+                    </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      size="sm"
-                      onClick={() => handleEditCard(index, card)}
-                    >
-                      Edit Card
-                    </Button>
-                  </div>
-                </CardContent>
-              </CardUI>
-            );
-          })}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        size="sm"
+                        onClick={() => handleEditCard(index, card)}
+                      >
+                        Edit or Remove Card
+                      </Button>
+                    </div>
+                  </CardContent>
+                </CardUI>
+              );
+            })}
+          </div>
         </div>
       )}
+
+      {/* Edit existing card dialog */}
+      <EditCardDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogClose}
+        onSuccess={handleSuccess}
+        card={editingCard?.card || null}
+        cardIndex={editingCard?.index ?? null}
+        topicId={topicId}
+      />
+
+      {/* Edit generated card dialog */}
+      <EditCardDialog
+        open={generatedCardDialogOpen}
+        onOpenChange={handleGeneratedCardDialogClose}
+        onSuccess={() => {}}
+        card={null}
+        cardIndex={null}
+        topicId={topicId}
+        generatedCard={currentGeneratedCard}
+        generatedCardIndex={editingGeneratedCardIndex}
+        onSaveGenerated={handleSaveGeneratedCard}
+      />
+
+      {/* Mode selection dialog */}
+      <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Generated Cards</DialogTitle>
+            <DialogDescription>
+              How would you like to add the {generatedCards.length} generated card{generatedCards.length !== 1 ? 's' : ''} to this topic?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-4">
+            <Button
+              variant="outline"
+              onClick={() => handleAddGeneratedCards('append')}
+              disabled={isAddingCards}
+              className="justify-start h-auto py-3 px-4"
+            >
+              <div className="text-left">
+                <p className="font-medium">Append to existing cards</p>
+                <p className="text-sm text-muted-foreground">
+                  Keep current {topic?.cards.length || 0} card{(topic?.cards.length || 0) !== 1 ? 's' : ''} and add {generatedCards.length} new card{generatedCards.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleAddGeneratedCards('replace')}
+              disabled={isAddingCards}
+              className="justify-start h-auto py-3 px-4"
+            >
+              <div className="text-left">
+                <p className="font-medium">Replace all cards</p>
+                <p className="text-sm text-muted-foreground">
+                  Remove all existing cards and use only the {generatedCards.length} new card{generatedCards.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowModeDialog(false)} disabled={isAddingCards}>
+              Cancel
+            </Button>
+          </DialogFooter>
+          {isAddingCards && (
+            <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded-lg">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Topic Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Topic?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the topic &quot;{topic?.name}&quot; and all its cards. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteTopic}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
