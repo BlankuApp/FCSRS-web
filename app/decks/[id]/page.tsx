@@ -279,8 +279,8 @@ export default function DeckDetailPage() {
       return;
     }
 
-    if (editedPrompt.length > 3000) {
-      toast.error('Prompt must be 3000 characters or less');
+    if (editedPrompt.length > 4000) {
+      toast.error('Prompt must be 4000 characters or less');
       return;
     }
 
@@ -634,12 +634,12 @@ export default function DeckDetailPage() {
                   onChange={(e) => setEditedPrompt(e.target.value)}
                   placeholder="e.g., You are a Spanish language tutor. Generate flashcards to help students learn..."
                   className="text-sm min-h-[200px]"
-                  maxLength={3000}
+                  maxLength={4000}
                   disabled={isUpdatingPrompt}
                 />
                 <div className="flex justify-between items-center">
                   <p className="text-xs text-muted-foreground">
-                    {editedPrompt?.length || 0}/3000 characters
+                    {editedPrompt?.length || 0}/4000 characters
                   </p>
                   {!editedPrompt?.trim() && (
                     <p className="text-xs text-destructive">Prompt cannot be empty</p>
@@ -653,7 +653,7 @@ export default function DeckDetailPage() {
                   disabled={
                     !editedPrompt?.trim() ||
                     editedPrompt === deck?.prompt ||
-                    editedPrompt.length > 3000 ||
+                    editedPrompt.length > 4000 ||
                     isUpdatingPrompt
                   }
                 >
