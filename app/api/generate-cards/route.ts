@@ -45,9 +45,11 @@ Return ONLY valid JSON in this format:
   "cards": [...]
 }`;
 
-    const userMessage = `Topic: ${topicName}
+    const userMessage = `Generate flashcards for this topic based on the instructions.
 
-Generate flashcards for this topic based on the instructions.`;
+#Topic: 
+${topicName}
+`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -56,7 +58,7 @@ Generate flashcards for this topic based on the instructions.`;
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-5.2',
+        model: 'gpt-5-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },
