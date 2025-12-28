@@ -135,7 +135,7 @@ Create **4 to 5** flashcards about the **[topic]**.
 ### ✅ 3) Cloze (fill-in-the-blank) cards in [target language]
 * Make **1 - 2** cloze cards in **[target language]** where **[topic]** is removed from the sentence.
 * Use natural daily-life sentences.
-* **Hint**: only provide the translation of **[topic]** in **[student language]** (nothing else) + beginning letter of the target word.
+* **Hint**: only provide the translation of **[topic]** in **[student language]** (nothing else) + beginning letter of the [topic].
 * **Answer**: show the full sentence with **[topic]** filled in.
 * Add a short explanation in **[student language]**
 * Add a mini-list: 2 - 4 additional examples using the **same collocation/pattern** with different words (each with translation)

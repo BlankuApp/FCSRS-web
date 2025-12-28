@@ -282,7 +282,7 @@ export default function DeckPracticePage() {
                     <span className="font-semibold flex items-center gap-1.5"><Lightbulb className="h-4 w-4" /> Hint</span>
                   </AccordionTrigger>
                   <AccordionContent className="pb-0">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                       <MarkdownRenderer content={(currentCard.card_data as QAHintData).hint} />
                     </div>
                   </AccordionContent>
