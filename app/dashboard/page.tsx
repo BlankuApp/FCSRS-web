@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpenIcon, RotateCcw, Dumbbell } from 'lucide-react';
+import { BookOpenIcon, Dumbbell, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -171,7 +171,7 @@ export default function DashboardPage() {
               <ItemActions>
                 <Button asChild size="sm" variant="outline" disabled={dueCount === 0} className="gap-1.5 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 disabled:opacity-50">
                   <Link href={`/review/${deck.id}`}>
-                    <RotateCcw className="h-4 w-4" />
+                    <GraduationCap className="h-4 w-4" />
                     <span className="hidden sm:inline">Review</span>
                   </Link>
                 </Button>

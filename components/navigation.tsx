@@ -12,7 +12,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, BookOpen, LayoutDashboard, User, LogOut } from 'lucide-react';
+import { Menu, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Navigation() {
@@ -45,12 +45,6 @@ export default function Navigation() {
   }
 
   const navLinks = [
-    {
-      href: '/dashboard',
-      label: 'Dashboard',
-      icon: LayoutDashboard,
-      active: pathname === '/dashboard',
-    },
     {
       href: '/profile',
       label: 'Profile',
