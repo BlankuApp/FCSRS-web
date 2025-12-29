@@ -20,6 +20,7 @@ export interface GeneratedCard {
   hint?: string;
   choices?: string[];
   correct_index?: number;
+  explanation?: string;
 }
 
 interface EditCardDialogProps {
@@ -53,7 +54,7 @@ export default function EditCardDialog({
   const [deleting, setDeleting] = useState(false);
 
   const [qaFormData, setQaFormData] = useState({ question: '', answer: '', hint: '', intrinsic_weight: 1.0 });
-  const [mcFormData, setMcFormData] = useState({ question: '', choices: ['', ''], correct_index: 0, intrinsic_weight: 1.0 });
+  const [mcFormData, setMcFormData] = useState({ question: '', choices: ['', ''], correct_index: 0, explanation: '', intrinsic_weight: 1.0 });
 
   const isEditMode = card !== null && cardIndex !== null;
   const isGeneratedCardMode = generatedCard !== null && generatedCard !== undefined && generatedCardIndex !== null && generatedCardIndex !== undefined;
@@ -77,6 +78,7 @@ export default function EditCardDialog({
           question: data.question,
           choices: [...data.choices],
           correct_index: data.correct_index,
+          explanation: data.explanation || '',
           intrinsic_weight: card.intrinsic_weight,
         });
       }
@@ -96,6 +98,7 @@ export default function EditCardDialog({
           question: generatedCard.question,
           choices: generatedCard.choices ? [...generatedCard.choices] : ['', ''],
           correct_index: generatedCard.correct_index || 0,
+          explanation: generatedCard.explanation || '',
           intrinsic_weight: 1.0,
         });
       }
@@ -103,7 +106,7 @@ export default function EditCardDialog({
       // Reset for create mode
       setCardType('qa_hint');
       setQaFormData({ question: '', answer: '', hint: '', intrinsic_weight: 1.0 });
-      setMcFormData({ question: '', choices: ['', ''], correct_index: 0, intrinsic_weight: 1.0 });
+      setMcFormData({ question: '', choices: ['', ''], correct_index: 0, explanation: '', intrinsic_weight: 1.0 });
     }
   }, [card, generatedCard]);
 
@@ -130,6 +133,7 @@ export default function EditCardDialog({
           question: mcFormData.question,
           choices: filteredChoices,
           correct_index: mcFormData.correct_index,
+          explanation: mcFormData.explanation || undefined,
         });
       }
       onOpenChange(false);
@@ -162,6 +166,7 @@ export default function EditCardDialog({
             question: mcFormData.question,
             choices: filteredChoices,
             correct_index: mcFormData.correct_index,
+            explanation: mcFormData.explanation || undefined,
             intrinsic_weight: mcFormData.intrinsic_weight,
           };
         }
@@ -193,6 +198,7 @@ export default function EditCardDialog({
             question: mcFormData.question,
             choices: filteredChoices,
             correct_index: mcFormData.correct_index,
+            explanation: mcFormData.explanation || undefined,
             intrinsic_weight: mcFormData.intrinsic_weight,
           };
         }
@@ -404,6 +410,17 @@ export default function EditCardDialog({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="explanation">Explanation (optional, Markdown supported)</Label>
+                  <Textarea
+                    id="explanation"
+                    value={mcFormData.explanation}
+                    onChange={(e) => setMcFormData({ ...mcFormData, explanation: e.target.value })}
+                    placeholder="Explain why the correct answer is right"
+                    disabled={submitting || deleting}
+                    rows={2}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="mc-intrinsic-weight">Intrinsic Weight (0.5 - 2.0)</Label>

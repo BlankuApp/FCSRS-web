@@ -43,6 +43,7 @@ export interface MultipleChoiceData {
   question: string;
   choices: string[];
   correct_index: number;
+  explanation: string;
 }
 
 export interface CardItem {
@@ -69,6 +70,7 @@ export interface MultipleChoiceCard extends BaseCard {
   question: string;
   choices: string[];
   correct_index: number;
+  explanation: string;
 }
 
 export type Card = QAHintCard | MultipleChoiceCard;
@@ -148,6 +150,7 @@ export interface CreateMultipleChoiceCardRequest {
   question: string;
   choices: string[];
   correct_index: number;
+  explanation?: string;
   intrinsic_weight?: number;
 }
 
@@ -165,6 +168,7 @@ export interface UpdateCardRequest {
   hint?: string;
   choices?: string[];
   correct_index?: number;
+  explanation?: string;
 }
 
 export interface CreateProfileRequest {

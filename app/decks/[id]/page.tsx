@@ -30,6 +30,7 @@ interface GeneratedCard {
   hint?: string;
   choices?: string[];
   correct_index?: number;
+  explanation?: string;
 }
 
 export default function DeckDetailPage() {
@@ -256,6 +257,7 @@ export default function DeckDetailPage() {
               question: card.question,
               choices: card.choices || [],
               correct_index: card.correct_index || 0,
+              explanation: card.explanation || '',
             };
           }
         }),

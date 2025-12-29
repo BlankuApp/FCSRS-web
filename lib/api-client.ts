@@ -237,6 +237,7 @@ class ApiClient {
     hint?: string;
     choices?: string[];
     correct_index?: number;
+    explanation?: string;
   }> }> {
     const response = await fetch('/api/generate-cards', {
       method: 'POST',

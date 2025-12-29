@@ -406,6 +406,16 @@ export default function DeckReviewPage() {
                       </div>
                     );
                   })}
+                  {(currentCard.card_data as MultipleChoiceData).explanation && (
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-start gap-2">
+                        <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-1 flex-shrink-0" />
+                        <div className="flex-1">
+                          <MarkdownRenderer content={(currentCard.card_data as MultipleChoiceData).explanation} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

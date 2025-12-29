@@ -196,6 +196,7 @@ export default function TopicDetailPage() {
               question: card.question,
               choices: card.choices || [],
               correct_index: card.correct_index || 0,
+              explanation: card.explanation || '',
             };
           }
         }),
@@ -594,6 +595,12 @@ export default function TopicDetailPage() {
                             ))}
                           </ul>
                         </div>
+                        {(cardData as MultipleChoiceData).explanation && (
+                          <div>
+                            <p className="text-sm font-semibold mb-1">Explanation:</p>
+                            <MarkdownRenderer content={(cardData as MultipleChoiceData).explanation} />
+                          </div>
+                        )}
                       </>
                     )}
                     
