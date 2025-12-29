@@ -593,7 +593,7 @@ export default function DeckDetailPage() {
                                 )}
                               </div>
                             ) : (
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-sm text-muted-foreground space-y-1">
                                 <p><strong>Choices:</strong></p>
                                 <ul className="list-disc list-inside">
                                   {card.choices?.map((choice, i) => (
@@ -602,6 +602,12 @@ export default function DeckDetailPage() {
                                     </li>
                                   ))}
                                 </ul>
+                                {card.explanation && (
+                                  <div>
+                                    <strong>Explanation:</strong>
+                                    <MarkdownRenderer content={card.explanation} />
+                                  </div>
+                                )}
                               </div>
                             )}
                           </CardContent>
