@@ -1,0 +1,16 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow authenticated pages
+Disallow: /dashboard
+Disallow: /decks/
+Disallow: /topics/
+Disallow: /review/
+Disallow: /practice/
+Disallow: /profile
+Disallow: /reset-password
+Disallow: /forgot-password
+
+# Sitemap
+Sitemap: https://fcsrs-web.vercel.app/sitemap.xml
