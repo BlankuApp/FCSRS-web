@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Pencil, ExternalLink, Lightbulb, RotateCcw, Flame, ThumbsUp, Sparkles, Check, X, Eye } from 'lucide-react';
+import { Pencil, ExternalLink, Lightbulb, RotateCcw, Flame, ThumbsUp, Sparkles, Check, X, Eye, AArrowDown, AArrowUp } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { apiClient } from '@/lib/api-client';
@@ -36,6 +36,25 @@ export default function DeckReviewPage() {
   const [reviewComplete, setReviewComplete] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [fontSize, setFontSize] = useState<'sm' | 'base' | 'lg'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cardFontSize');
+      if (saved === 'sm' || saved === 'base' || saved === 'lg') return saved;
+    }
+    return 'base';
+  });
+
+  const decreaseFontSize = () => {
+    const newSize = fontSize === 'lg' ? 'base' : 'sm';
+    setFontSize(newSize);
+    localStorage.setItem('cardFontSize', newSize);
+  };
+
+  const increaseFontSize = () => {
+    const newSize = fontSize === 'sm' ? 'base' : 'lg';
+    setFontSize(newSize);
+    localStorage.setItem('cardFontSize', newSize);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -301,6 +320,26 @@ export default function DeckReviewPage() {
           <span className="text-xs text-muted-foreground whitespace-nowrap">{totalReviewed}/{totalDue}</span>
         </div>
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={decreaseFontSize}
+            disabled={fontSize === 'sm'}
+            className="h-7 px-2"
+            title="Decrease font size"
+          >
+            <AArrowDown className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={increaseFontSize}
+            disabled={fontSize === 'lg'}
+            className="h-7 px-2"
+            title="Increase font size"
+          >
+            <AArrowUp className="h-3.5 w-3.5" />
+          </Button>
           <Button variant="ghost" size="sm" onClick={handleEditCard} className="h-7 px-2 text-xs gap-1">
             <Pencil className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Edit</span>
@@ -318,7 +357,7 @@ export default function DeckReviewPage() {
         <CardContent className="space-y-4 md:px-0">
           {/* Question */}
           <div className="p-3 bg-secondary rounded-lg">
-            <MarkdownRenderer content={currentCard.card_data.question} />
+            <MarkdownRenderer content={currentCard.card_data.question} size={fontSize} />
             
             {/* Hint (for QA cards only) */}
             {currentCard.card_type === 'qa_hint' && (currentCard.card_data as QAHintData).hint && !showAnswer && (
@@ -329,7 +368,7 @@ export default function DeckReviewPage() {
                   </AccordionTrigger>
                   <AccordionContent className="pb-0">
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <MarkdownRenderer content={(currentCard.card_data as QAHintData).hint} />
+                      <MarkdownRenderer content={(currentCard.card_data as QAHintData).hint} size={fontSize} />
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -375,7 +414,7 @@ export default function DeckReviewPage() {
             <>
               {currentCard.card_type === 'qa_hint' ? (
                 <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                  <MarkdownRenderer content={(currentCard.card_data as QAHintData).answer} />
+                  <MarkdownRenderer content={(currentCard.card_data as QAHintData).answer} size={fontSize} />
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -411,7 +450,7 @@ export default function DeckReviewPage() {
                       <div className="flex items-start gap-2">
                         <Lightbulb className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-1 flex-shrink-0" />
                         <div className="flex-1">
-                          <MarkdownRenderer content={(currentCard.card_data as MultipleChoiceData).explanation} />
+                          <MarkdownRenderer content={(currentCard.card_data as MultipleChoiceData).explanation} size={fontSize} />
                         </div>
                       </div>
                     </div>

@@ -6,6 +6,7 @@ import MarkdownIt from 'markdown-it';
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  size?: 'sm' | 'base' | 'lg';
 }
 
 // RTL Unicode ranges:
@@ -74,16 +75,18 @@ const md = new MarkdownIt({
   typographer: true,   // Enable smart quotes and other typographic replacements
 });
 
-export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, className = '', size = 'sm' }: MarkdownRendererProps) {
   // Memoize the rendered HTML with direction applied to each element
   const renderedHtml = useMemo(() => {
     const html = md.render(content);
     return applyDirectionToElements(html);
   }, [content]);
 
+  const proseSize = size === 'lg' ? 'prose-lg' : size === 'base' ? 'prose-base' : 'prose-sm';
+
   return (
     <div 
-      className={`prose prose-sm dark:prose-invert max-w-none ${className}`}
+      className={`prose ${proseSize} dark:prose-invert max-w-none ${className}`}
       dangerouslySetInnerHTML={{ __html: renderedHtml }}
     />
   );
