@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Sparkles, Brain, BarChart3 } from 'lucide-react';
 import Loading from '@/components/loading';
 
 const signupSchema = z.object({
@@ -70,26 +70,46 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50/50 to-teal-50/30">
+      {/* Floating orbs */}
+      <div className="absolute -top-20 -right-20 w-72 h-72 bg-purple-400/20 rounded-full blur-3xl animate-float will-change-transform pointer-events-none" />
+      <div className="absolute top-1/2 -left-32 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl animate-float-delayed will-change-transform pointer-events-none" />
+      <div className="absolute -bottom-20 right-1/3 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl animate-float-slow will-change-transform pointer-events-none" />
+      
+      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center relative z-10">
         {/* Left Panel - Branding */}
         <div className="hidden lg:flex flex-col justify-center space-y-6 p-12">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">TCSRS</h1>
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 bg-clip-text text-transparent">TCSRS</h1>
             <p className="text-xl text-muted-foreground">
               Your intelligent spaced repetition learning companion
             </p>
           </div>
-          <div className="space-y-4 text-muted-foreground">
-            <p>✓ Generate flashcards with AI</p>
-            <p>✓ Smart spaced repetition algorithm</p>
-            <p>✓ Track your learning progress</p>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-indigo-600" />
+              </div>
+              <span className="text-muted-foreground">Generate flashcards with AI</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Brain className="h-4 w-4 text-purple-600" />
+              </div>
+              <span className="text-muted-foreground">Smart spaced repetition algorithm</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
+                <BarChart3 className="h-4 w-4 text-teal-600" />
+              </div>
+              <span className="text-muted-foreground">Track your learning progress</span>
+            </div>
           </div>
         </div>
 
         {/* Right Panel - Form */}
         <div className="flex items-center justify-center">
-          <Card className="w-full max-w-md border-border/50 shadow-lg">
+          <Card className="w-full max-w-md border-border/50 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl">Sign Up</CardTitle>
               <CardDescription>Create a new account to get started</CardDescription>
@@ -186,7 +206,7 @@ export default function SignUpPage() {
                 <CardFooter className="flex flex-col space-y-4">
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300" 
                     disabled={form.formState.isSubmitting}
                   >
                     {form.formState.isSubmitting ? 'Signing up...' : 'Sign Up'}

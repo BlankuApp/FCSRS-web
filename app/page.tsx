@@ -79,7 +79,7 @@ const jsonLd = {
       ]
     }
   ]
-  };
+};
 
 export default function Home() {
   const promptExamples = ['english-vocabulary', 'programming', 'science-concepts'] as const;
@@ -94,7 +94,7 @@ export default function Home() {
     <>
       {/* Client component for auth redirect */}
       <HomeAuthRedirect />
-      
+
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
@@ -103,7 +103,13 @@ export default function Home() {
 
       <div className="min-h-screen bg-background">
         {/* Hero Section */}
-        <section className="container mx-auto px-4 py-16 md:py-24 max-w-6xl">
+        <section className="relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50/50 to-teal-50/30">
+          {/* Floating orbs */}
+          <div className="absolute -top-20 -right-20 w-72 h-72 bg-purple-400/20 rounded-full blur-3xl animate-float will-change-transform pointer-events-none" />
+          <div className="absolute top-1/2 -left-32 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl animate-float-delayed will-change-transform pointer-events-none" />
+          <div className="absolute -bottom-20 right-1/3 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl animate-float-slow will-change-transform pointer-events-none" />
+          
+          <div className="container mx-auto px-4 py-16 md:py-24 max-w-6xl relative z-10">
           <div className="flex flex-col items-center text-center space-y-8">
             {/* Logo */}
             <div className="flex items-center gap-3">
@@ -116,17 +122,17 @@ export default function Home() {
             {/* Headline */}
             <div className="space-y-4 max-w-3xl">
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-                Free <span className="text-primary">AI-Generated</span> Flashcards for Smarter Learning
+                Free <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 bg-clip-text text-transparent">AI-Generated</span> Flashcards for Smarter Learning
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Create AI flashcards instantly with our free flashcard generator. 
+                Create AI flashcards instantly with our free flashcard generator.
                 Study online with smart spaced repetition and never face the same question twice.
               </p>
             </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button asChild size="lg" className="text-lg px-8">
+              <Button asChild size="lg" className="text-lg px-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300">
                 <Link href="/signup">
                   Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
@@ -136,10 +142,12 @@ export default function Home() {
               </Button>
             </div>
           </div>
+          </div>
         </section>
 
         {/* Features Grid */}
-        <section className="container mx-auto px-4 py-16 max-w-6xl">
+        <section className="bg-slate-50/80 py-16">
+          <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
             <h3 className="text-3xl font-bold mb-4">Powerful AI Study Tools</h3>
             <p className="text-muted-foreground text-lg">
@@ -149,65 +157,70 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Feature 1: AI-Generated Cards */}
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="hover:shadow-lg hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 bg-white/80 backdrop-blur-sm">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Sparkles className="h-6 w-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center mb-4">
+                  <Sparkles className="h-6 w-6 text-indigo-600" />
                 </div>
                 <CardTitle>Free AI Flashcard Generator</CardTitle>
                 <CardDescription>
-                  Create flashcards instantly with AI. Our free AI flashcard maker generates 
+                  Create flashcards instantly with AI. Our free AI flashcard maker generates
                   custom questions tailored to your learning style. Let AI do the heavy lifting.
                 </CardDescription>
               </CardHeader>
             </Card>
 
             {/* Feature 2: Topic Organization */}
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="hover:shadow-lg hover:shadow-purple-500/10 hover:-translate-y-1 transition-all duration-300 bg-white/80 backdrop-blur-sm">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <BookOpen className="h-6 w-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mb-4">
+                  <BookOpen className="h-6 w-6 text-purple-600" />
                 </div>
                 <CardTitle>Topic-Based Organization</CardTitle>
                 <CardDescription>
-                  Organize your online flashcards into decks and topics. Each topic can have its own 
+                  Organize your online flashcards into decks and topics. Each topic can have its own
                   custom AI prompt to generate targeted, relevant study questions.
                 </CardDescription>
               </CardHeader>
             </Card>
 
             {/* Feature 3: Spaced Repetition */}
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="hover:shadow-lg hover:shadow-teal-500/10 hover:-translate-y-1 transition-all duration-300 bg-white/80 backdrop-blur-sm">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Brain className="h-6 w-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-teal-100 flex items-center justify-center mb-4">
+                  <Brain className="h-6 w-6 text-teal-600" />
                 </div>
                 <CardTitle>Smart Spaced Repetition App</CardTitle>
                 <CardDescription>
-                  Our spaced repetition algorithm adapts to your learning pace. Review flashcards 
+                  Our spaced repetition algorithm adapts to your learning pace. Review flashcards
                   at optimal intervals for maximum retention and long-term memory.
                 </CardDescription>
               </CardHeader>
             </Card>
 
             {/* Feature 4: Dynamic Questions */}
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-300 bg-white/80 backdrop-blur-sm">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Zap className="h-6 w-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-violet-100 flex items-center justify-center mb-4">
+                  <Zap className="h-6 w-6 text-violet-600" />
                 </div>
                 <CardTitle>Always Fresh AI Questions</CardTitle>
                 <CardDescription>
-                  Every study session presents different AI-generated questions for the same topic. 
+                  Every study session presents different AI-generated questions for the same topic.
                   Face new challenges each time and truly master your material.
                 </CardDescription>
               </CardHeader>
             </Card>
           </div>
+          </div>
         </section>
 
         {/* How It Works */}
-        <section className="container mx-auto px-4 py-16 max-w-6xl">
+        <section className="relative overflow-hidden py-16">
+          {/* Background orb */}
+          <div className="absolute -right-40 top-1/4 w-80 h-80 bg-purple-300/10 rounded-full blur-3xl pointer-events-none will-change-transform" />
+          
+          <div className="container mx-auto px-4 max-w-6xl relative z-10">
           <div className="text-center mb-12">
             <h3 className="text-3xl font-bold mb-4">How it works</h3>
             <p className="text-muted-foreground text-lg">
@@ -217,10 +230,10 @@ export default function Home() {
 
           <div className="space-y-8">
             {/* Step 1 */}
-            <Card>
+            <Card className="border-l-4 border-l-indigo-500 bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                  <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center text-xl font-bold shadow-lg shadow-indigo-500/30">
                     1
                   </div>
                   <div className="space-y-1">
@@ -238,7 +251,7 @@ export default function Home() {
                 </div>
 
                 <Tabs defaultValue={promptExamples[0]} className="w-full">
-                  <TabsList className="w-full flex-wrap">
+                  <TabsList className="w-full flex flex-col sm:flex-row gap-1">
                     {promptExamples.map((id) => (
                       <TabsTrigger key={id} value={id}>
                         {promptById.get(id)?.name ?? id}
@@ -269,10 +282,10 @@ export default function Home() {
             </Card>
 
             {/* Step 2 */}
-            <Card>
+            <Card className="border-l-4 border-l-purple-500 bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                  <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center text-xl font-bold shadow-lg shadow-purple-500/30">
                     2
                   </div>
                   <div className="space-y-1">
@@ -291,9 +304,9 @@ export default function Home() {
                       Topic examples (what you type)
                     </div>
                     <Tabs defaultValue={promptExamples[0]} className="w-full">
-                      <TabsList className="w-full flex-wrap">
+                      <TabsList className="w-full flex flex-col sm:flex-row gap-1">
                         {promptExamples.map((id) => (
-                          <TabsTrigger key={id} value={id}>
+                          <TabsTrigger key={id} value={id} className="w-full sm:w-auto">
                             {promptById.get(id)?.name ?? id}
                           </TabsTrigger>
                         ))}
@@ -328,9 +341,9 @@ export default function Home() {
                       Example cards generated by AI
                     </div>
                     <Tabs defaultValue={promptExamples[0]} className="w-full">
-                      <TabsList className="w-full flex-wrap">
+                      <TabsList className="w-full flex flex-col sm:flex-row gap-1">
                         {promptExamples.map((id) => (
-                          <TabsTrigger key={id} value={id}>
+                          <TabsTrigger key={id} value={id} className="w-full sm:w-auto">
                             {promptById.get(id)?.name ?? id}
                           </TabsTrigger>
                         ))}
@@ -421,10 +434,10 @@ export default function Home() {
             </Card>
 
             {/* Step 3 */}
-            <Card>
+            <Card className="border-l-4 border-l-teal-500 bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                  <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 text-white flex items-center justify-center text-xl font-bold shadow-lg shadow-teal-500/30">
                     3
                   </div>
                   <div className="space-y-1">
@@ -436,43 +449,53 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-stretch">
-                  <div className="rounded-lg border p-4">
-                    <div className="flex items-center gap-2 font-medium">
-                      <CalendarClock className="h-4 w-4 text-primary" />
-                      Pick a due topic
+                {/* Scroll hint wrapper */}
+                <div className="relative px-6">
+                  {/* Left fade gradient - mobile only */}
+                  <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-card to-transparent z-10 pointer-events-none md:hidden" />
+                  {/* Right fade gradient - mobile only */}
+                  <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-card to-transparent z-10 pointer-events-none md:hidden" />
+
+                  <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible">
+                    <div className="grid gap-4 grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-stretch min-w-[700px] md:min-w-0">
+                      <div className="rounded-lg border p-4 min-w-[150px]">
+                        <div className="flex items-center gap-2 font-medium">
+                          <CalendarClock className="h-4 w-4 text-primary" />
+                          Pick a due topic
+                        </div>
+                        <div className="mt-2 text-sm text-muted-foreground">Only topics scheduled for today enter your review queue.</div>
+                      </div>
+                      <div className="flex items-center justify-center text-muted-foreground">
+                        <ArrowRight className="h-5 w-5" />
+                      </div>
+                      <div className="rounded-lg border p-4 min-w-[150px]">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Shuffle className="h-4 w-4 text-primary" />
+                          Ask a random card
+                        </div>
+                        <div className="mt-2 text-sm text-muted-foreground">Within the topic, a random Q/A or multiple-choice card is selected.</div>
+                      </div>
+                      <div className="flex items-center justify-center text-muted-foreground">
+                        <ArrowRight className="h-5 w-5" />
+                      </div>
+                      <div className="rounded-lg border p-4 min-w-[150px]">
+                        <div className="flex items-center gap-2 font-medium">
+                          <CircleCheck className="h-4 w-4 text-primary" />
+                          Answer & grade
+                        </div>
+                        <div className="mt-2 text-sm text-muted-foreground">Your result updates that card/topic's difficulty signal.</div>
+                      </div>
+                      <div className="flex items-center justify-center text-muted-foreground">
+                        <ArrowRight className="h-5 w-5" />
+                      </div>
+                      <div className="rounded-lg border p-4 min-w-[150px]">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Repeat2 className="h-4 w-4 text-primary" />
+                          Schedule next review
+                        </div>
+                        <div className="mt-2 text-sm text-muted-foreground">Easier items reappear later; harder ones come back sooner.</div>
+                      </div>
                     </div>
-                    <div className="mt-2 text-sm text-muted-foreground">Only topics scheduled for today enter your review queue.</div>
-                  </div>
-                  <div className="hidden md:flex items-center justify-center text-muted-foreground">
-                    <ArrowRight className="h-5 w-5" />
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="flex items-center gap-2 font-medium">
-                      <Shuffle className="h-4 w-4 text-primary" />
-                      Ask a random card
-                    </div>
-                    <div className="mt-2 text-sm text-muted-foreground">Within the topic, a random Q/A or multiple-choice card is selected.</div>
-                  </div>
-                  <div className="hidden md:flex items-center justify-center text-muted-foreground">
-                    <ArrowRight className="h-5 w-5" />
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="flex items-center gap-2 font-medium">
-                      <CircleCheck className="h-4 w-4 text-primary" />
-                      Answer & grade
-                    </div>
-                    <div className="mt-2 text-sm text-muted-foreground">Your result updates that card/topic’s difficulty signal.</div>
-                  </div>
-                  <div className="hidden md:flex items-center justify-center text-muted-foreground">
-                    <ArrowRight className="h-5 w-5" />
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <div className="flex items-center gap-2 font-medium">
-                      <Repeat2 className="h-4 w-4 text-primary" />
-                      Schedule next review
-                    </div>
-                    <div className="mt-2 text-sm text-muted-foreground">Easier items reappear later; harder ones come back sooner.</div>
                   </div>
                 </div>
 
@@ -481,21 +504,23 @@ export default function Home() {
                     <Brain className="h-4 w-4 text-primary" />
                     Example spaced repetition timeline
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    {[
-                      { label: 'Today', sub: 'Learn' },
-                      { label: 'Tomorrow', sub: 'Quick review' },
-                      { label: 'In 3 days', sub: 'Reinforce' },
-                      { label: 'In 7 days', sub: 'Lock in' },
-                    ].map((item) => (
-                      <div key={item.label} className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 rounded-full bg-primary" />
-                          <div className="text-sm font-medium">{item.label}</div>
+                  <div className="overflow-x-auto -mx-4 px-4">
+                    <div className="flex items-center gap-6 min-w-max sm:min-w-0 sm:justify-between">
+                      {[
+                        { label: 'Today', sub: 'Learn' },
+                        { label: 'Tomorrow', sub: 'Quick review' },
+                        { label: 'In 3 days', sub: 'Reinforce' },
+                        { label: 'In 7 days', sub: 'Lock in' },
+                      ].map((item) => (
+                        <div key={item.label} className="shrink-0 sm:shrink">
+                          <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 rounded-full bg-primary" />
+                            <div className="text-sm font-medium whitespace-nowrap">{item.label}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground ml-5 whitespace-nowrap">{item.sub}</div>
                         </div>
-                        <div className="text-xs text-muted-foreground ml-5">{item.sub}</div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -503,17 +528,25 @@ export default function Home() {
           </div>
 
           {/* Final CTA */}
-          <div className="text-center mt-16">
-            <Button asChild size="lg" className="text-lg px-8">
+          <div className="text-center mt-16 relative">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-64 h-32 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-teal-500/20 blur-2xl rounded-full" />
+            </div>
+            <Button asChild size="lg" className="text-lg px-8 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 relative z-10">
               <Link href="/signup">
                 Start Learning Free Today <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </div>
+          </div>
         </section>
 
         {/* FAQ Section for SEO */}
-        <section className="container mx-auto px-4 py-16 max-w-4xl">
+        <section className="bg-gradient-to-t from-indigo-50/60 via-purple-50/30 to-transparent py-16">
+          {/* Decorative divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent mb-12 max-w-2xl mx-auto" />
+          
+          <div className="container mx-auto px-4 max-w-4xl">
           <div className="text-center mb-12">
             <h3 className="text-3xl font-bold mb-4">Frequently Asked Questions</h3>
             <p className="text-muted-foreground text-lg">
@@ -522,39 +555,40 @@ export default function Home() {
           </div>
 
           <div className="space-y-6">
-            <div className="border rounded-lg p-6">
+            <div className="border rounded-lg p-6 bg-white/80 backdrop-blur-sm hover:border-purple-200 hover:bg-purple-50/30 transition-all duration-200">
               <h4 className="text-lg font-semibold mb-2">How do AI-generated flashcards work?</h4>
               <p className="text-muted-foreground">
-                TCSRS uses AI to automatically create flashcards based on your topics and custom prompts. 
-                Simply define what you want to learn, and AI generates targeted questions and answers 
+                TCSRS uses AI to automatically create flashcards based on your topics and custom prompts.
+                Simply define what you want to learn, and AI generates targeted questions and answers
                 tailored to your learning style.
               </p>
             </div>
 
-            <div className="border rounded-lg p-6">
+            <div className="border rounded-lg p-6 bg-white/80 backdrop-blur-sm hover:border-purple-200 hover:bg-purple-50/30 transition-all duration-200">
               <h4 className="text-lg font-semibold mb-2">Is the AI flashcard generator free?</h4>
               <p className="text-muted-foreground">
-                Yes! TCSRS offers free AI-generated flashcards. You can create custom decks, add topics, 
+                Yes! TCSRS offers free AI-generated flashcards. You can create custom decks, add topics,
                 and generate flashcards using AI at no cost.
               </p>
             </div>
 
-            <div className="border rounded-lg p-6">
+            <div className="border rounded-lg p-6 bg-white/80 backdrop-blur-sm hover:border-purple-200 hover:bg-purple-50/30 transition-all duration-200">
               <h4 className="text-lg font-semibold mb-2">What is spaced repetition?</h4>
               <p className="text-muted-foreground">
-                Spaced repetition is a learning technique that reviews information at optimal intervals. 
-                TCSRS uses a smart algorithm to show you flashcards at the right time for maximum 
+                Spaced repetition is a learning technique that reviews information at optimal intervals.
+                TCSRS uses a smart algorithm to show you flashcards at the right time for maximum
                 retention and long-term memory.
               </p>
             </div>
 
-            <div className="border rounded-lg p-6">
+            <div className="border rounded-lg p-6 bg-white/80 backdrop-blur-sm hover:border-purple-200 hover:bg-purple-50/30 transition-all duration-200">
               <h4 className="text-lg font-semibold mb-2">Can I study flashcards online?</h4>
               <p className="text-muted-foreground">
-                Yes! TCSRS is a web-based flashcard app. You can create, organize, and study your 
+                Yes! TCSRS is a web-based flashcard app. You can create, organize, and study your
                 flashcards online from any device with a browser.
               </p>
             </div>
+          </div>
           </div>
         </section>
       </div>
