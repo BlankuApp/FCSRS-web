@@ -164,6 +164,13 @@ export default function DeckDetailPage() {
     }
   };
 
+  const handleTopicNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && topicName.trim() && !isGenerating && !isAdding && deck?.prompt) {
+      e.preventDefault();
+      handleGenerateCards();
+    }
+  };
+
   const handleRemoveCard = (index: number) => {
     setGeneratedCards(prev => prev.filter((_, i) => i !== index));
   };
@@ -503,9 +510,11 @@ export default function DeckDetailPage() {
                     id="topicName"
                     value={topicName}
                     onChange={(e) => setTopicName(e.target.value)}
+                    onKeyDown={handleTopicNameKeyDown}
                     placeholder="e.g., Present Tense Verbs"
                     maxLength={255}
                     disabled={isGenerating || isAdding}
+                    autoComplete="off"
                   />
                   <InputGroupButton
                     type="button"
@@ -641,7 +650,7 @@ export default function DeckDetailPage() {
                   value={editedPrompt}
                   onChange={(e) => setEditedPrompt(e.target.value)}
                   placeholder="e.g., You are a Spanish language tutor. Generate flashcards to help students learn..."
-                  className="text-sm min-h-[200px]"
+                  className="text-sm min-h-[200px] font-mono"
                   maxLength={4000}
                   disabled={isUpdatingPrompt}
                 />

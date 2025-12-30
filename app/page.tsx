@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, BookOpen, Brain, Zap, ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { defaultPrompts } from '@/lib/default-prompts';
+import { BookOpen, Brain, CalendarClock, CircleCheck, Sparkles, Shuffle, Zap, ArrowRight, Repeat2 } from 'lucide-react';
 import HomeAuthRedirect from '@/components/home-auth-redirect';
 
 // JSON-LD structured data for SEO
@@ -76,9 +79,17 @@ const jsonLd = {
       ]
     }
   ]
-};
+  };
 
 export default function Home() {
+  const promptExamples = ['english-vocabulary', 'programming', 'science-concepts'] as const;
+  const promptById = new Map(defaultPrompts.map((p) => [p.id, p]));
+  const promptExcerpt = (prompt: string, maxLines = 18) => {
+    const lines = prompt.trim().split('\n');
+    const excerpt = lines.slice(0, maxLines).join('\n');
+    return lines.length > maxLines ? `${excerpt}\n…` : excerpt;
+  };
+
   return (
     <>
       {/* Client component for auth redirect */}
@@ -198,56 +209,297 @@ export default function Home() {
         {/* How It Works */}
         <section className="container mx-auto px-4 py-16 max-w-6xl">
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold mb-4">How to Create Free AI Flashcards</h3>
+            <h3 className="text-3xl font-bold mb-4">How it works</h3>
             <p className="text-muted-foreground text-lg">
-              Get started in four simple steps
+              Create a deck, add topics, then review with spaced repetition
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="space-y-8">
             {/* Step 1 */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
-                1
-              </div>
-              <h4 className="text-xl font-semibold">Create a Deck</h4>
-              <p className="text-muted-foreground">
-                Start by creating a new deck for your subject or course
-              </p>
-            </div>
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                    1
+                  </div>
+                  <div className="space-y-1">
+                    <CardTitle className="text-xl">Create a deck (and set the deck AI prompt)</CardTitle>
+                    <CardDescription>
+                      Your deck prompt is the “instruction manual” for the AI: what to generate, formatting rules, and the card types you want (Q/A, multiple choice, cloze, etc.).
+                      We also provide a wide variety of ready-made templates across different subjects—pick one that matches your goal, then customize it to your preferences (tone, difficulty, format, and question types).
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-muted-foreground">
+                  Pick a strong starting prompt and tweak it for your learner profile. Here are a few examples:
+                </div>
+
+                <Tabs defaultValue={promptExamples[0]} className="w-full">
+                  <TabsList className="w-full flex-wrap">
+                    {promptExamples.map((id) => (
+                      <TabsTrigger key={id} value={id}>
+                        {promptById.get(id)?.name ?? id}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+
+                  {promptExamples.map((id) => {
+                    const prompt = promptById.get(id);
+                    if (!prompt) return null;
+                    return (
+                      <TabsContent key={id} value={id} className="mt-3">
+                        <div className="space-y-2">
+                          <div className="text-sm">
+                            <div className="text-muted-foreground">{prompt.description}</div>
+                          </div>
+                          <div className="rounded-lg border bg-muted/40 p-4">
+                            <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed max-h-72 overflow-auto">
+                              {promptExcerpt(prompt.content)}
+                            </pre>
+                          </div>
+                        </div>
+                      </TabsContent>
+                    );
+                  })}
+                </Tabs>
+              </CardContent>
+            </Card>
 
             {/* Step 2 */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
-                2
-              </div>
-              <h4 className="text-xl font-semibold">Add Topics</h4>
-              <p className="text-muted-foreground">
-                Define topics with custom AI prompts that match your learning goals
-              </p>
-            </div>
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                    2
+                  </div>
+                  <div className="space-y-1">
+                    <CardTitle className="text-xl">Add topics (AI generates cards per topic)</CardTitle>
+                    <CardDescription>
+                      Each topic you add is appended to your deck prompt. Then AI generates a batch of cards under that topic automatically (Q/A and multiple choice).
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                      Topic examples (what you type)
+                    </div>
+                    <Tabs defaultValue={promptExamples[0]} className="w-full">
+                      <TabsList className="w-full flex-wrap">
+                        {promptExamples.map((id) => (
+                          <TabsTrigger key={id} value={id}>
+                            {promptById.get(id)?.name ?? id}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      <TabsContent value="english-vocabulary" className="mt-3">
+                        <div className="rounded-lg border bg-muted/40 p-4">
+                          <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed">
+                            {`"mitigate" (formal verb)`}
+                          </pre>
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="programming" className="mt-3">
+                        <div className="rounded-lg border bg-muted/40 p-4">
+                          <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed">
+                            {`Big‑O complexity (common patterns)`}
+                          </pre>
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="science-concepts" className="mt-3">
+                        <div className="rounded-lg border bg-muted/40 p-4">
+                          <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed">
+                            {`Newton’s 2nd law (F = m·a)`}
+                          </pre>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Example cards generated by AI
+                    </div>
+                    <Tabs defaultValue={promptExamples[0]} className="w-full">
+                      <TabsList className="w-full flex-wrap">
+                        {promptExamples.map((id) => (
+                          <TabsTrigger key={id} value={id}>
+                            {promptById.get(id)?.name ?? id}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+
+                      <TabsContent value="english-vocabulary" className="mt-3 space-y-3">
+                        <div className="rounded-lg border p-4">
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Q/A</div>
+                          <div className="font-medium">Question</div>
+                          <div className="text-muted-foreground text-sm">What does “mitigate” mean, and when would you use it?</div>
+                          <Separator className="my-3" />
+                          <div className="font-medium">Answer</div>
+                          <div className="text-muted-foreground text-sm">
+                            “Mitigate” means to make something less severe or harmful. You’d use it in formal contexts like reducing risk, damage, or impact (e.g., “We mitigated the outage by adding retries.”).
+                          </div>
+                        </div>
+                        <div className="rounded-lg border p-4">
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Multiple Choice</div>
+                          <div className="font-medium">Question</div>
+                          <div className="text-muted-foreground text-sm">Which sentence uses “mitigate” correctly?</div>
+                          <ul className="mt-2 space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                            <li>We added a cache to mitigate the impact of slow database queries.</li>
+                            <li>We mitigated to the office after lunch.</li>
+                            <li>The meeting mitigated for two hours.</li>
+                            <li>I mitigated my coffee with sugar.</li>
+                          </ul>
+                          <Separator className="my-3" />
+                          <div className="font-medium">Correct answer</div>
+                          <div className="text-muted-foreground text-sm">We added a cache to mitigate the impact of slow database queries.</div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="programming" className="mt-3 space-y-3">
+                        <div className="rounded-lg border p-4">
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Q/A</div>
+                          <div className="font-medium">Question</div>
+                          <div className="text-muted-foreground text-sm">What does <span className="font-mono">O(n)</span> mean in Big‑O notation?</div>
+                          <Separator className="my-3" />
+                          <div className="font-medium">Answer</div>
+                          <div className="text-muted-foreground text-sm">
+                            It means the runtime grows linearly with input size: if the input doubles, the work roughly doubles (e.g., scanning an array once).
+                          </div>
+                        </div>
+                        <div className="rounded-lg border p-4">
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Multiple Choice</div>
+                          <div className="font-medium">Question</div>
+                          <div className="text-muted-foreground text-sm">Which operation is typically <span className="font-mono">O(log n)</span>?</div>
+                          <ul className="mt-2 space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                            <li>Linear search in an unsorted array</li>
+                            <li>Binary search in a sorted array</li>
+                            <li>Sorting an array (comparison sort)</li>
+                            <li>Appending to the end of an array</li>
+                          </ul>
+                          <Separator className="my-3" />
+                          <div className="font-medium">Correct answer</div>
+                          <div className="text-muted-foreground text-sm">Binary search in a sorted array</div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="science-concepts" className="mt-3 space-y-3">
+                        <div className="rounded-lg border p-4">
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Q/A</div>
+                          <div className="font-medium">Question</div>
+                          <div className="text-muted-foreground text-sm">What does Newton’s 2nd law (<span className="font-mono">F = m·a</span>) tell us?</div>
+                          <Separator className="my-3" />
+                          <div className="font-medium">Answer</div>
+                          <div className="text-muted-foreground text-sm">Acceleration increases when force increases and decreases when mass increases. It connects how pushes/pulls change motion.</div>
+                        </div>
+                        <div className="rounded-lg border p-4">
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Multiple Choice</div>
+                          <div className="font-medium">Question</div>
+                          <div className="text-muted-foreground text-sm">According to Newton’s 2nd law (<span className="font-mono">F = m·a</span>), what happens to acceleration if force doubles and mass stays the same?</div>
+                          <ul className="mt-2 space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                            <li>Acceleration doubles</li>
+                            <li>Acceleration halves</li>
+                            <li>Acceleration stays the same</li>
+                            <li>Acceleration becomes zero</li>
+                          </ul>
+                          <Separator className="my-3" />
+                          <div className="font-medium">Correct answer</div>
+                          <div className="text-muted-foreground text-sm">Acceleration doubles</div>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Step 3 */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
-                3
-              </div>
-              <h4 className="text-xl font-semibold">Generate AI Flashcards</h4>
-              <p className="text-muted-foreground">
-                Let AI automatically create flashcards based on your topics for free
-              </p>
-            </div>
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold">
+                    3
+                  </div>
+                  <div className="space-y-1">
+                    <CardTitle className="text-xl">Review with spaced repetition (fresh questions every time)</CardTitle>
+                    <CardDescription>
+                      TCSRS schedules topics for review. When a topic is due, you’ll get a random card from that topic—so you practice the same knowledge in different ways across sessions.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-stretch">
+                  <div className="rounded-lg border p-4">
+                    <div className="flex items-center gap-2 font-medium">
+                      <CalendarClock className="h-4 w-4 text-primary" />
+                      Pick a due topic
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">Only topics scheduled for today enter your review queue.</div>
+                  </div>
+                  <div className="hidden md:flex items-center justify-center text-muted-foreground">
+                    <ArrowRight className="h-5 w-5" />
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="flex items-center gap-2 font-medium">
+                      <Shuffle className="h-4 w-4 text-primary" />
+                      Ask a random card
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">Within the topic, a random Q/A or multiple-choice card is selected.</div>
+                  </div>
+                  <div className="hidden md:flex items-center justify-center text-muted-foreground">
+                    <ArrowRight className="h-5 w-5" />
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="flex items-center gap-2 font-medium">
+                      <CircleCheck className="h-4 w-4 text-primary" />
+                      Answer & grade
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">Your result updates that card/topic’s difficulty signal.</div>
+                  </div>
+                  <div className="hidden md:flex items-center justify-center text-muted-foreground">
+                    <ArrowRight className="h-5 w-5" />
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <div className="flex items-center gap-2 font-medium">
+                      <Repeat2 className="h-4 w-4 text-primary" />
+                      Schedule next review
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">Easier items reappear later; harder ones come back sooner.</div>
+                  </div>
+                </div>
 
-            {/* Step 4 */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
-                4
-              </div>
-              <h4 className="text-xl font-semibold">Study Online</h4>
-              <p className="text-muted-foreground">
-                Review with spaced repetition and adaptive questions that change every session
-              </p>
-            </div>
+                <div className="rounded-lg border bg-muted/40 p-4">
+                  <div className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <Brain className="h-4 w-4 text-primary" />
+                    Example spaced repetition timeline
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    {[
+                      { label: 'Today', sub: 'Learn' },
+                      { label: 'Tomorrow', sub: 'Quick review' },
+                      { label: 'In 3 days', sub: 'Reinforce' },
+                      { label: 'In 7 days', sub: 'Lock in' },
+                    ].map((item) => (
+                      <div key={item.label} className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-primary" />
+                          <div className="text-sm font-medium">{item.label}</div>
+                        </div>
+                        <div className="text-xs text-muted-foreground ml-5">{item.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Final CTA */}
