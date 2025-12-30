@@ -19,9 +19,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, ChevronUp, ChevronDown, Trash2, Pencil, Check, X } from 'lucide-react';
+import { Loader2, ChevronUp, ChevronDown, Trash2, Pencil, Check, X, Settings } from 'lucide-react';
 import EmptyState from '@/components/empty-state';
 import MarkdownRenderer from '@/components/markdown-renderer';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { AIProvider } from '@/lib/types';
+import { AI_PROVIDERS, DEFAULT_PROVIDER, getDefaultModel } from '@/lib/ai-providers';
 
 interface GeneratedCard {
   card_type: 'qa_hint' | 'multiple_choice';
@@ -82,6 +85,31 @@ export default function DeckDetailPage() {
   // Deck deletion state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // AI Provider state
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('aiProvider');
+      if (saved && saved in AI_PROVIDERS) {
+        return saved as AIProvider;
+      }
+    }
+    return DEFAULT_PROVIDER;
+  });
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const savedProvider = localStorage.getItem('aiProvider') as AIProvider;
+      const savedModel = localStorage.getItem('aiModel');
+      if (savedProvider && savedModel) {
+        const providerConfig = AI_PROVIDERS[savedProvider];
+        if (providerConfig?.models.some(m => m.id === savedModel)) {
+          return savedModel;
+        }
+      }
+    }
+    return getDefaultModel(DEFAULT_PROVIDER);
+  });
+  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -151,11 +179,20 @@ export default function DeckDetailPage() {
   const handleGenerateCards = async () => {
     if (!topicName.trim() || !deck) return;
 
+    if (!apiKey.trim()) {
+      toast.error('Please enter your API key in the AI Settings');
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedCards([]);
 
     try {
-      const response = await apiClient.generateCards(deck.prompt, topicName);
+      const response = await apiClient.generateCards(deck.prompt, topicName, {
+        provider: selectedProvider,
+        model: selectedModel,
+        apiKey: apiKey,
+      });
       setGeneratedCards(response.cards);
     } catch (err: any) {
       toast.error(err.message || 'Failed to generate cards');
@@ -164,8 +201,25 @@ export default function DeckDetailPage() {
     }
   };
 
+  const handleProviderChange = (provider: AIProvider) => {
+    setSelectedProvider(provider);
+    const newModel = getDefaultModel(provider);
+    setSelectedModel(newModel);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aiProvider', provider);
+      localStorage.setItem('aiModel', newModel);
+    }
+  };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aiModel', model);
+    }
+  };
+
   const handleTopicNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && topicName.trim() && !isGenerating && !isAdding && deck?.prompt) {
+    if (e.key === 'Enter' && topicName.trim() && !isGenerating && !isAdding && deck?.prompt && apiKey.trim()) {
       e.preventDefault();
       handleGenerateCards();
     }
@@ -504,6 +558,82 @@ export default function DeckDetailPage() {
           {/* Create Topic Tab */}
           <TabsContent value="create" className="space-y-4">
             <div className="space-y-4">
+              {/* AI Settings Accordion */}
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="ai-settings" className="border rounded-xl bg-muted/30 px-4">
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
+                        <Settings className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span className="text-sm font-medium">AI Settings</span>
+                        {!apiKey.trim() ? (
+                          <span className="text-xs text-destructive">API key required</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            {AI_PROVIDERS[selectedProvider].displayName} · {AI_PROVIDERS[selectedProvider].models.find(m => m.id === selectedModel)?.name || selectedModel}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4">
+                    <div className="space-y-3 pt-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select
+                          value={selectedProvider}
+                          onValueChange={(value) => handleProviderChange(value as AIProvider)}
+                          disabled={isGenerating}
+                        >
+                          <SelectTrigger id="provider" className="w-auto min-w-[120px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(AI_PROVIDERS) as AIProvider[]).map((provider) => (
+                              <SelectItem key={provider} value={provider} className="text-xs">
+                                {AI_PROVIDERS[provider].displayName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={selectedModel}
+                          onValueChange={handleModelChange}
+                          disabled={isGenerating}
+                        >
+                          <SelectTrigger id="model" className="w-auto min-w-[140px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {AI_PROVIDERS[selectedProvider].models.map((model) => (
+                              <SelectItem key={model.id} value={model.id} className="text-xs">
+                                {model.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="apiKey"
+                          type="text"
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                          placeholder={`${AI_PROVIDERS[selectedProvider].displayName} API key`}
+                          disabled={isGenerating}
+                          autoComplete="on"
+                          className="h-8 text-xs flex-1"
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-tight">
+                        Your API key is stored locally and never sent to our servers.
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
               <div className="space-y-2">
                 <InputGroup>
                   <InputGroupInput
@@ -519,7 +649,7 @@ export default function DeckDetailPage() {
                   <InputGroupButton
                     type="button"
                     onClick={handleGenerateCards}
-                    disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt}
+                    disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt || !apiKey.trim()}
                   >
                     {isGenerating ? (
                       <>
@@ -539,8 +669,7 @@ export default function DeckDetailPage() {
               {/* Generated Cards Preview */}
               {generatedCards.length > 0 && (
                 <div className="space-y-3">
-                  <Label>Generated Cards ({generatedCards.length})</Label>
-                  <div className="space-y-2 overflow-y-auto border rounded-md p-3">
+                  <div className="space-y-2 overflow-y-auto">
                     <TooltipProvider>
                       {generatedCards.map((card, index) => (
                         <Card

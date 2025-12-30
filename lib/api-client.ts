@@ -18,6 +18,9 @@ import {
   CreateProfileRequest,
   UpdateProfileRequest,
   ApiError,
+  AIProvider,
+  GenerateCardsOptions,
+  GenerateCardsResponse,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -229,22 +232,21 @@ class ApiClient {
   // AI Card Generation
   async generateCards(
     deckPrompt: string,
-    topicName: string
-  ): Promise<{ cards: Array<{
-    card_type: 'qa_hint' | 'multiple_choice';
-    question: string;
-    answer?: string;
-    hint?: string;
-    choices?: string[];
-    correct_index?: number;
-    explanation?: string;
-  }> }> {
+    topicName: string,
+    options: GenerateCardsOptions
+  ): Promise<GenerateCardsResponse> {
     const response = await fetch('/api/generate-cards', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ deckPrompt, topicName }),
+      body: JSON.stringify({
+        deckPrompt,
+        topicName,
+        provider: options.provider,
+        model: options.model,
+        apiKey: options.apiKey,
+      }),
     });
 
     if (!response.ok) {

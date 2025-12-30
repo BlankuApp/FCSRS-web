@@ -186,3 +186,36 @@ export interface UpdateProfileRequest {
 export interface ApiError {
   detail: string;
 }
+
+// AI Provider Types
+export type AIProvider = 'openai' | 'google' | 'xai' | 'anthropic';
+
+export interface AIModel {
+  id: string;
+  name: string;
+}
+
+export interface AIProviderConfig {
+  displayName: string;
+  models: AIModel[];
+}
+
+export interface GenerateCardsOptions {
+  provider: AIProvider;
+  model: string;
+  apiKey: string;
+}
+
+export interface GeneratedCardResponse {
+  card_type: 'qa_hint' | 'multiple_choice';
+  question: string;
+  answer?: string;
+  hint?: string;
+  choices?: string[];
+  correct_index?: number;
+  explanation?: string;
+}
+
+export interface GenerateCardsResponse {
+  cards: GeneratedCardResponse[];
+}
