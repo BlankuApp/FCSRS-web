@@ -78,7 +78,9 @@ const md = new MarkdownIt({
 export default function MarkdownRenderer({ content, className = '', size = 'sm' }: MarkdownRendererProps) {
   // Memoize the rendered HTML with direction applied to each element
   const renderedHtml = useMemo(() => {
-    const html = md.render(content);
+    // Convert <br> tags in raw content to newlines
+    const normalizedContent = content.replace(/<br\s*\/?>/gi, '\n');
+    const html = md.render(normalizedContent);
     return applyDirectionToElements(html);
   }, [content]);
 
