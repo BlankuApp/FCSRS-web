@@ -169,6 +169,14 @@ export default function TopicDetailPage() {
   // === Generated cards handlers ===
   const isPremiumUser = profile?.role === 'admin' || profile?.role === 'pro';
 
+  // Reset provider to default for premium users
+  useEffect(() => {
+    if (isPremiumUser && selectedProvider !== DEFAULT_PROVIDER) {
+      setSelectedProvider(DEFAULT_PROVIDER);
+      setSelectedModel(getDefaultModel(DEFAULT_PROVIDER));
+    }
+  }, [isPremiumUser, selectedProvider]);
+
   const handleGenerateCards = async () => {
     if (!topic || !deck?.prompt) return;
 
@@ -507,7 +515,12 @@ export default function TopicDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {(Object.keys(AI_PROVIDERS) as AIProvider[]).map((provider) => (
-                      <SelectItem key={provider} value={provider} className="text-xs">
+                      <SelectItem 
+                        key={provider} 
+                        value={provider} 
+                        className="text-xs"
+                        disabled={isPremiumUser && provider !== DEFAULT_PROVIDER}
+                      >
                         {AI_PROVIDERS[provider].displayName}
                       </SelectItem>
                     ))}
