@@ -79,7 +79,7 @@ export interface UserProfile {
   user_id: string;
   username: string;
   avatar: string | null;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'pro';
   ai_prompts: Record<string, any>;
   created_at: string | null;
   updated_at: string | null;

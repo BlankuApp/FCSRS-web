@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api-client';
-import { Topic, Deck, CardItem, QAHintData, MultipleChoiceData, AIProvider } from '@/lib/types';
+import { Topic, Deck, CardItem, QAHintData, MultipleChoiceData, AIProvider, UserProfile } from '@/lib/types';
 import { Card as CardUI, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -59,6 +59,9 @@ export default function TopicDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // User profile state
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
   // AI Provider state
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>(() => {
     if (typeof window !== 'undefined') {
@@ -89,6 +92,12 @@ export default function TopicDetailPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      apiClient.getProfile().then(setProfile).catch(console.error);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user && topicId) {
@@ -158,10 +167,12 @@ export default function TopicDetailPage() {
   };
 
   // === Generated cards handlers ===
+  const isPremiumUser = profile?.role === 'admin' || profile?.role === 'pro';
+
   const handleGenerateCards = async () => {
     if (!topic || !deck?.prompt) return;
 
-    if (!apiKey.trim()) {
+    if (!isPremiumUser && !apiKey.trim()) {
       toast.error('Please enter your API key in the AI Settings');
       return;
     }
@@ -429,7 +440,7 @@ export default function TopicDetailPage() {
                   <Button
                     variant="outline"
                     onClick={handleGenerateCards}
-                    disabled={isGenerating || isDeckLoading || !deck?.prompt || !apiKey.trim()}
+                    disabled={isGenerating || isDeckLoading || !deck?.prompt || (!isPremiumUser && !apiKey.trim())}
                   >
                     {isGenerating ? (
                       <>
@@ -452,7 +463,7 @@ export default function TopicDetailPage() {
                   <p>Deck prompt is required for card generation</p>
                 </TooltipContent>
               )}
-              {!isDeckLoading && deck?.prompt && !apiKey.trim() && (
+              {!isPremiumUser && !isDeckLoading && deck?.prompt && !apiKey.trim() && (
                 <TooltipContent>
                   <p>API key required - configure in AI Settings below</p>
                 </TooltipContent>
@@ -473,7 +484,7 @@ export default function TopicDetailPage() {
               </div>
               <div className="flex flex-col items-start gap-0.5">
                 <span className="text-sm font-medium">AI Settings</span>
-                {!apiKey.trim() ? (
+                {!isPremiumUser && !apiKey.trim() ? (
                   <span className="text-xs text-destructive">API key required</span>
                 ) : (
                   <span className="text-xs text-muted-foreground">
@@ -519,21 +530,25 @@ export default function TopicDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="apiKey"
-                  type="text"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={`${AI_PROVIDERS[selectedProvider].displayName} API key`}
-                  disabled={isGenerating}
-                  autoComplete="on"
-                  className="h-8 text-xs flex-1"
-                />
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-tight">
-                Your API key is stored locally and never sent to our servers.
-              </p>
+              {!isPremiumUser && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="apiKey"
+                      type="text"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder={`${AI_PROVIDERS[selectedProvider].displayName} API key`}
+                      disabled={isGenerating}
+                      autoComplete="on"
+                      className="h-8 text-xs flex-1"
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    Your API key is stored locally and never sent to our servers.
+                  </p>
+                </>
+              )}
             </div>
           </AccordionContent>
         </AccordionItem>
