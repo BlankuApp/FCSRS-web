@@ -235,26 +235,16 @@ class ApiClient {
     topicName: string,
     options: GenerateCardsOptions
   ): Promise<GenerateCardsResponse> {
-    const response = await fetch('/api/generate-cards', {
+    return this.request('/ai/generate-cards', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
-        deckPrompt,
-        topicName,
+        deck_prompt: deckPrompt,
+        topic_name: topicName,
         provider: options.provider,
         model: options.model,
-        apiKey: options.apiKey,
+        api_key: options.apiKey,
       }),
     });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.error || 'Failed to generate cards');
-    }
-
-    return response.json();
   }
 }
 

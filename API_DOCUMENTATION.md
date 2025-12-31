@@ -15,6 +15,7 @@
   - [Topics](#topics)
   - [Review](#review)
   - [Profile](#profile)
+  - [AI Generation](#ai-generation)
 - [SRS Algorithm & Review Workflow](#srs-algorithm--review-workflow)
 - [Database Schema](#database-schema)
 - [Integration Notes](#integration-notes)
@@ -298,6 +299,51 @@ interface UpdateProfileRequest {
   username?: string;             // 3-50 chars
   avatar?: string;               // HTTP/HTTPS URL
   ai_prompts?: Record<string, any>;
+}
+
+// AI Provider Types
+type AIProvider = 'openai' | 'google' | 'xai' | 'anthropic';
+
+interface AIModel {
+  id: string;                    // Model identifier (e.g., 'gpt-4o')
+  name: string;                  // Display name (e.g., 'GPT-4o')
+}
+
+interface AIProviderInfo {
+  id: string;                    // Provider identifier
+  display_name: string;          // Display name
+  models: AIModel[];             // Available models
+}
+
+interface AIProvidersResponse {
+  providers: AIProviderInfo[];   // List of available providers
+  default_provider: string;      // Default provider ID
+  default_model: string;         // Default model ID
+}
+
+// Generate Cards Request
+interface GenerateCardsRequest {
+  deck_prompt: string;           // Required, deck's prompt for card generation
+  topic_name: string;            // Required, topic name to generate cards for
+  provider: AIProvider;          // Required, AI provider to use
+  model: string;                 // Required, model ID to use
+  api_key?: string;              // Optional, if empty and user is pro/admin, uses server-side key
+}
+
+// Generated Card
+interface GeneratedCard {
+  card_type: 'qa_hint' | 'multiple_choice';
+  question: string;              // Markdown supported
+  answer?: string;               // For qa_hint cards
+  hint?: string;                 // For qa_hint cards
+  choices?: string[];            // For multiple_choice cards
+  correct_index?: number;        // For multiple_choice cards
+  explanation?: string;          // For multiple_choice cards
+}
+
+// Generate Cards Response
+interface GenerateCardsResponse {
+  cards: GeneratedCard[];        // List of generated cards
 }
 ```
 
@@ -1092,6 +1138,126 @@ Update any user's profile by ID
 
 ---
 
+### AI Generation
+
+AI-powered flashcard generation using various LLM providers.
+
+#### Environment Variables (Backend)
+
+For server-side API key fallback (pro/admin users), configure these on the backend:
+
+```env
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=AIza...
+XAI_API_KEY=xai-...
+```
+
+---
+
+#### `GET /ai/providers` 🔒
+Get available AI providers and models
+
+**Response:** `200 OK` → `AIProvidersResponse`
+
+**Example Response:**
+```typescript
+{
+  providers: [
+    {
+      id: "openai",
+      display_name: "OpenAI",
+      models: [
+        { id: "gpt-4o", name: "GPT-4o" },
+        { id: "gpt-4o-mini", name: "GPT-4o Mini" }
+      ]
+    },
+    {
+      id: "anthropic",
+      display_name: "Anthropic",
+      models: [
+        { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet" }
+      ]
+    }
+    // ... more providers
+  ],
+  default_provider: "openai",
+  default_model: "gpt-4o-mini"
+}
+```
+
+**Errors:**
+- `401` - Unauthorized
+
+---
+
+#### `POST /ai/generate-cards` 🔒
+Generate flashcards using AI
+
+**Request Body:** `GenerateCardsRequest`
+
+**API Key Behavior:**
+- If `api_key` is provided (non-empty string), it will be used for the AI request.
+- If `api_key` is empty/omitted and user role is `'pro'` or `'admin'`, the server-side API key from environment variables is used.
+- If `api_key` is empty/omitted and user role is `'user'`, returns `403 Forbidden`.
+
+**Example Request:**
+```typescript
+POST /ai/generate-cards
+Body: {
+  deck_prompt: "You are a helpful assistant creating flashcards for learning TypeScript...",
+  topic_name: "TypeScript Generics",
+  provider: "openai",
+  model: "gpt-4o-mini",
+  api_key: "sk-..." // Optional for pro/admin users
+}
+```
+
+**Response:** `201 Created` → `GenerateCardsResponse`
+
+**Example Response:**
+```typescript
+{
+  cards: [
+    {
+      card_type: "qa_hint",
+      question: "What is a generic type in TypeScript?",
+      answer: "A generic type is a type that can work with multiple types...",
+      hint: "Think of it as a type placeholder"
+    },
+    {
+      card_type: "multiple_choice",
+      question: "Which syntax declares a generic function?",
+      choices: [
+        "function fn<T>(arg: T): T",
+        "function fn(arg: T): T",
+        "function fn<>(arg): T",
+        "generic function fn(arg)"
+      ],
+      correct_index: 0,
+      explanation: "The angle brackets <T> declare a type parameter..."
+    }
+  ]
+}
+```
+
+**Errors:**
+- `400` - Validation error, invalid provider/model, or AI provider API error
+- `401` - Unauthorized
+- `403` - API key required (user role is 'user' and no api_key provided)
+- `500` - Server-side API key not configured, or AI response parsing error
+
+**Supported Providers:**
+
+| Provider | ID | Example Models |
+|----------|-----|----------------|
+| OpenAI | `openai` | `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo` |
+| Anthropic | `anthropic` | `claude-3-5-sonnet-latest`, `claude-3-5-haiku-latest` |
+| Google | `google` | `gemini-2.0-flash-exp`, `gemini-1.5-pro` |
+| xAI | `xai` | `grok-2-latest`, `grok-beta` |
+
+---
+
 ## SRS Algorithm & Review Workflow
 
 ### Core Parameters
@@ -1109,10 +1275,11 @@ Topic difficulty rating
 - Affects interval calculation
 
 #### Intrinsic Weight (W)
-Card importance multiplier
+Card importance multiplier (dynamically updated after each review)
 - **Range:** 0.5 to 2.0
 - **Default:** 1.0
 - Amplifies review performance impact
+- **Updated based on performance:** Cards rated "Again" increase in weight (need more attention), cards rated "Easy" decrease (well-learned)
 
 #### Base Score (B)
 Review rating from user
@@ -1165,6 +1332,41 @@ D_new = D_current - difficulty_delta
 - Effective score: 3 × 1.0 = 3.0
 - Difficulty delta: (3.0 - 2.0) × 0.3 = 0.3
 - **New difficulty: 5.0 - 0.3 = 4.7** (easier)
+
+---
+
+### Intrinsic Weight Update Formula
+
+The card's `intrinsic_weight` is dynamically updated after each review based on performance. Cards that are difficult to remember become more important (higher weight), while well-learned cards become less important (lower weight).
+
+```
+WEIGHT_MULTIPLIERS = {
+    0: 1.05,  # Again - increase weight (card needs more attention)
+    1: 1.01,  # Hard - slight increase
+    2: 0.99,  # Good - slight decrease
+    3: 0.95   # Easy - decrease weight (card is well-learned)
+}
+
+W_new = W_current × WEIGHT_MULTIPLIERS[base_score]
+
+# Apply bounds: [0.5, 2.0]
+```
+
+**Example 1 (Again):**
+- Current weight: 1.0
+- Base score: 0 (Again)
+- Multiplier: 1.05
+- **New weight: 1.0 × 1.05 = 1.05**
+
+**Example 2 (Easy, multiple reviews):**
+- Current weight: 1.5
+- Base score: 3 (Easy)
+- Multiplier: 0.95
+- **New weight: 1.5 × 0.95 = 1.425**
+
+**Convergence:**
+- A card starting at 1.0 requires ~14 consecutive "Again" ratings to reach the max of 2.0
+- A card starting at 1.0 requires ~14 consecutive "Easy" ratings to reach the min of 0.5
 
 ---
 
@@ -1641,4 +1843,4 @@ Body: { base_score: 2 }
 
 ---
 
-**Last Updated:** December 29, 2025
+**Last Updated:** December 31, 2025
