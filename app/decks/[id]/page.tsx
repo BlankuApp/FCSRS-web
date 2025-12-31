@@ -19,10 +19,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, ChevronUp, ChevronDown, Trash2, Pencil, Check, X, Settings } from 'lucide-react';
+import { Loader2, ChevronUp, ChevronDown, Trash2, Pencil, Check, X, Settings, Lock } from 'lucide-react';
 import EmptyState from '@/components/empty-state';
 import MarkdownRenderer from '@/components/markdown-renderer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AIProvider } from '@/lib/types';
 import { AI_PROVIDERS, DEFAULT_PROVIDER, getDefaultModel } from '@/lib/ai-providers';
 
@@ -112,7 +113,21 @@ export default function DeckDetailPage() {
     }
     return getDefaultModel(DEFAULT_PROVIDER);
   });
-  const [apiKey, setApiKey] = useState('');
+  const [rememberApiKey, setRememberApiKey] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('rememberApiKey') === 'true';
+    }
+    return false;
+  });
+  const [apiKey, setApiKey] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const remember = localStorage.getItem('rememberApiKey') === 'true';
+      if (remember) {
+        return localStorage.getItem('aiApiKey') || '';
+      }
+    }
+    return '';
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -234,6 +249,25 @@ export default function DeckDetailPage() {
     setSelectedModel(model);
     if (typeof window !== 'undefined') {
       localStorage.setItem('aiModel', model);
+    }
+  };
+
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value);
+    if (typeof window !== 'undefined' && rememberApiKey) {
+      localStorage.setItem('aiApiKey', value);
+    }
+  };
+
+  const handleRememberApiKeyChange = (checked: boolean) => {
+    setRememberApiKey(checked);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('rememberApiKey', checked.toString());
+      if (checked) {
+        localStorage.setItem('aiApiKey', apiKey);
+      } else {
+        localStorage.removeItem('aiApiKey');
+      }
     }
   };
 
@@ -645,12 +679,28 @@ export default function DeckDetailPage() {
                               id="apiKey"
                               type="text"
                               value={apiKey}
-                              onChange={(e) => setApiKey(e.target.value)}
+                              onChange={(e) => handleApiKeyChange(e.target.value)}
                               placeholder={`${AI_PROVIDERS[selectedProvider].displayName} API key`}
                               disabled={isGenerating}
                               autoComplete="on"
                               className="h-8 text-xs flex-1"
                             />
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Checkbox
+                                id="rememberApiKey"
+                                checked={rememberApiKey}
+                                onCheckedChange={handleRememberApiKeyChange}
+                                disabled={isGenerating}
+                                className="h-3.5 w-3.5"
+                              />
+                              <Label
+                                htmlFor="rememberApiKey"
+                                className="text-[11px] cursor-pointer flex items-center gap-1 m-0"
+                              >
+                                <Lock className="h-3 w-3" />
+                                Remember
+                              </Label>
+                            </div>
                           </div>
                           <p className="text-[11px] text-muted-foreground leading-tight">
                             Your API key is stored locally and never sent to our servers.

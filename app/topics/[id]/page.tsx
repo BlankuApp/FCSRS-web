@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Pencil, ArrowLeft, Check, X, Settings } from 'lucide-react';
+import { Loader2, Trash2, Pencil, ArrowLeft, Check, X, Settings, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
 import EmptyState from '@/components/empty-state';
 import MarkdownRenderer from '@/components/markdown-renderer';
 import EditCardDialog, { GeneratedCard } from '@/components/edit-card-dialog';
@@ -85,7 +86,21 @@ export default function TopicDetailPage() {
     }
     return getDefaultModel(DEFAULT_PROVIDER);
   });
-  const [apiKey, setApiKey] = useState('');
+  const [rememberApiKey, setRememberApiKey] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('rememberApiKey') === 'true';
+    }
+    return false;
+  });
+  const [apiKey, setApiKey] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const remember = localStorage.getItem('rememberApiKey') === 'true';
+      if (remember) {
+        return localStorage.getItem('aiApiKey') || '';
+      }
+    }
+    return '';
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -216,6 +231,25 @@ export default function TopicDetailPage() {
     setSelectedModel(model);
     if (typeof window !== 'undefined') {
       localStorage.setItem('aiModel', model);
+    }
+  };
+
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value);
+    if (typeof window !== 'undefined' && rememberApiKey) {
+      localStorage.setItem('aiApiKey', value);
+    }
+  };
+
+  const handleRememberApiKeyChange = (checked: boolean) => {
+    setRememberApiKey(checked);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('rememberApiKey', checked.toString());
+      if (checked) {
+        localStorage.setItem('aiApiKey', apiKey);
+      } else {
+        localStorage.removeItem('aiApiKey');
+      }
     }
   };
 
@@ -550,12 +584,28 @@ export default function TopicDetailPage() {
                       id="apiKey"
                       type="text"
                       value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
                       placeholder={`${AI_PROVIDERS[selectedProvider].displayName} API key`}
                       disabled={isGenerating}
                       autoComplete="on"
                       className="h-8 text-xs flex-1"
                     />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Checkbox
+                        id="rememberApiKey"
+                        checked={rememberApiKey}
+                        onCheckedChange={handleRememberApiKeyChange}
+                        disabled={isGenerating}
+                        className="h-3.5 w-3.5"
+                      />
+                      <Label
+                        htmlFor="rememberApiKey"
+                        className="text-[11px] cursor-pointer flex items-center gap-1 m-0"
+                      >
+                        <Lock className="h-3 w-3" />
+                        Remember
+                      </Label>
+                    </div>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-tight">
                     Your API key is stored locally and never sent to our servers.
