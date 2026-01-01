@@ -16,7 +16,7 @@ TCSRS-Web/
 ```
 
 ### Key Features Implemented
-✅ Authentication (login/signup with automatic profile creation)
+✅ Authentication (login/signup with profile creation during signup)
 ✅ Deck management (create, view, delete)
 ✅ Topic management (create, view, delete)
 ✅ Card management (Q&A with hints & Multiple Choice)
@@ -59,8 +59,8 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## First-Time Usage
 
-1. **Sign Up**: Navigate to signup page and create an account
-2. **Create Profile**: Enter a username (automatically prompted)
+1. **Sign Up**: Navigate to signup page, create an account and enter your username
+2. **Dashboard**: After signup, you'll be directed to your dashboard
 3. **Create Deck**: Go to "Decks" and create your first deck
 4. **Add Topics**: Within a deck, create topics to organize cards
 5. **Add Cards**: Create flashcards (Q&A or Multiple Choice)

@@ -1612,15 +1612,33 @@ CREATE TABLE user_profiles (
 
 **Important:** User profiles must be created explicitly after Supabase authentication.
 
-**Recommended flow:**
+The signup flow in the application handles profile creation during user registration. After Supabase authentication completes and the session token is available, the frontend calls the `POST /profile/` endpoint to create the user profile.
+
+**Implementation flow:**
 ```typescript
-// After successful Supabase authentication
+// During signup (after Supabase auth completes)
+// 1. Sign up with Supabase
+await signUp(email, password);
+await signIn(email, password);
+
+// 2. Wait for auth state to update and token to be available
+await waitForAuthToken();
+
+// 3. Create profile with the authenticated token
+await createProfile(token, {
+  username: 'user123',
+  avatar: 'https://example.com/avatar.jpg'
+});
+```
+
+**For existing users checking profile status:**
+```typescript
+// Check if profile exists
 try {
-  // Check if profile exists
   const profile = await getProfile(token);
 } catch (error) {
   if (error.status === 404) {
-    // Profile doesn't exist, prompt user to create one
+    // Profile doesn't exist, create one
     await createProfile(token, {
       username: 'user123',
       avatar: 'https://example.com/avatar.jpg'

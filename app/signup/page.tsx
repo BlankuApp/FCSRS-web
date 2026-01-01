@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +30,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [signupStage, setSignupStage] = useState<'idle' | 'auth' | 'profile'>('idle');
   const { user, loading: authLoading, signUp, signIn } = useAuth();
   const router = useRouter();
 
@@ -49,15 +51,34 @@ export default function SignUpPage() {
 
   const onSubmit = async (data: SignupFormValues) => {
     try {
+      setSignupStage('auth');
       await signUp(data.email, data.password);
       await signIn(data.email, data.password);
       
+      // Wait for auth state to settle and token to be set
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Authentication timeout. Please try again.'));
+        }, 10000);
+        
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (session?.access_token) {
+            apiClient.setToken(session.access_token);
+            clearTimeout(timeout);
+            subscription.unsubscribe();
+            resolve();
+          }
+        });
+      });
+      
+      setSignupStage('profile');
       await apiClient.createProfile({
         username: data.username,
       });
 
       router.push('/dashboard');
     } catch (err: any) {
+      setSignupStage('idle');
       form.setError('root', {
         type: 'manual',
         message: err.message || 'Failed to sign up',
@@ -209,7 +230,12 @@ export default function SignUpPage() {
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 mt-6" 
                     disabled={form.formState.isSubmitting}
                   >
-                    {form.formState.isSubmitting ? 'Signing up...' : 'Sign Up'}
+                    {form.formState.isSubmitting 
+                      ? signupStage === 'profile' 
+                        ? 'Creating your profile...' 
+                        : 'Signing up...'
+                      : 'Sign Up'
+                    }
                   </Button>
                   <p className="text-sm text-muted-foreground text-center">
                     Already have an account?{' '}
