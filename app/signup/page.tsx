@@ -72,8 +72,10 @@ export default function SignUpPage() {
       });
       
       setSignupStage('profile');
+      const randomNumber = Math.floor(Math.random() * 100) + 1;
       await apiClient.createProfile({
         username: data.username,
+        avatar: `https://avatar.iran.liara.run/public/${randomNumber}`,
       });
 
       router.push('/dashboard');
