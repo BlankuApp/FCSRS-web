@@ -344,7 +344,7 @@ export default function DeckPracticePage() {
                   <div className="flex items-start gap-2 w-full">
                     <span className="font-semibold flex-shrink-0">{String.fromCharCode(65 + index)}.</span>
                     <div className="flex-1 break-words overflow-wrap-anywhere">
-                      <MarkdownRenderer content={choice} />
+                      <MarkdownRenderer content={choice} size={fontSize} />
                     </div>
                   </div>
                 </Button>
@@ -378,7 +378,7 @@ export default function DeckPracticePage() {
                         <div className="flex items-start gap-2">
                           <span className="font-semibold">{String.fromCharCode(65 + index)}.</span>
                           <div className="flex-1">
-                            <MarkdownRenderer content={choice} />
+                            <MarkdownRenderer content={choice} size={fontSize} />
                           </div>
                           {isCorrect && <Check className="h-4 w-4 text-green-600 dark:text-green-400" />}
                           {isSelected && !isCorrect && (
