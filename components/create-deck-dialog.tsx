@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MarkdownRenderer from '@/components/markdown-renderer';
 
 interface CreateDeckDialogProps {
   open: boolean;
@@ -128,9 +129,9 @@ export default function CreateDeckDialog({ open, onOpenChange, onSuccess }: Crea
                     <p className="text-sm font-semibold text-red-900 dark:text-red-100">
                       IMPORTANT NOTICE
                     </p>
-                    <p className="text-sm text-red-800 dark:text-red-200">
-                      {selectedPrompt.description}
-                    </p>
+                    <div className="text-sm text-red-800 dark:text-red-200">
+                      <MarkdownRenderer content={selectedPrompt.description} />
+                    </div>
                   </div>
                 </div>
               )}
@@ -143,7 +144,7 @@ export default function CreateDeckDialog({ open, onOpenChange, onSuccess }: Crea
                 value={formData.prompt}
                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
                 placeholder="Enter the prompt that defines this deck..."
-                className="min-h-[200px] max-h-[calc(90vh-400px)] w-full overflow-y-auto resize-none"
+                className="min-h-[200px] max-h-[calc(90vh-400px)] w-full overflow-y-auto resize-none font-mono"
                 required
                 disabled={submitting}
               />
