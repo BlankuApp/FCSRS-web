@@ -257,18 +257,19 @@ export default function DeckPracticePage() {
   }
 
   return (
-    <div className="container mx-auto p-2 md:p-4 max-w-3xl">
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <div className="container mx-auto p-2 md:p-4 max-w-3xl flex flex-col min-h-screen">
+      <div className="flex-1 overflow-y-auto pb-24">
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {fetching && (
-        <Loading variant="inline" text="Loading next batch of cards..." className="mb-4" />
-      )}
+        {fetching && (
+          <Loading variant="inline" text="Loading next batch of cards..." className="mb-4" />
+        )}
 
-      <div className="mb-3 flex items-center gap-3">
+        <div className="mb-3 flex items-center gap-3">
         <div className="flex-1 flex items-center gap-2">
           <Progress value={(currentIndex / cards.length) * 100} className="h-1.5" />
           <span className="text-xs text-muted-foreground whitespace-nowrap">{currentIndex + 1}/{cards.length}</span>
@@ -351,18 +352,6 @@ export default function DeckPracticePage() {
             </div>
           )}
 
-          {/* Show Answer Button */}
-          {!showAnswer && (
-            <Button
-              onClick={() => setShowAnswer(true)}
-              className="w-full gap-2"
-              disabled={currentCard.card_type === 'multiple_choice' && selectedChoice === null}
-            >
-              <Eye className="h-4 w-4" />
-              Show Answer
-            </Button>
-          )}
-
           {/* Answer Display */}
           {showAnswer && (
             <>
@@ -411,18 +400,34 @@ export default function DeckPracticePage() {
                   )}
                 </div>
               )}
-
-              {/* Next Card Button */}
-              <Button
-                onClick={handleNextCard}
-                className="w-full gap-2"
-              >
-                Next Card
-                <ArrowRight className="h-4 w-4" />
-              </Button>
             </>
           )}
         </CardContent>
+      </div>
+      </div>
+
+      {/* Fixed Bottom Action Buttons */}
+      <div className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/95 backdrop-blur-sm border-t">
+        <div className="container mx-auto max-w-3xl">
+          {!showAnswer ? (
+            <Button
+              onClick={() => setShowAnswer(true)}
+              className="w-full gap-2"
+              disabled={currentCard.card_type === 'multiple_choice' && selectedChoice === null}
+            >
+              <Eye className="h-4 w-4" />
+              Show Answer
+            </Button>
+          ) : (
+            <Button
+              onClick={handleNextCard}
+              className="w-full gap-2"
+            >
+              Next Card
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <EditCardDialog

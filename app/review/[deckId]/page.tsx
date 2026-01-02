@@ -303,18 +303,19 @@ export default function DeckReviewPage() {
   }
 
   return (
-    <div className="container mx-auto p-2 md:p-4 max-w-3xl">
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <div className="container mx-auto p-2 md:p-4 max-w-3xl flex flex-col min-h-screen">
+      <div className="flex-1 overflow-y-auto pb-32">
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {fetching && (
-        <Loading variant="inline" text="Loading next batch of cards..." className="mb-4" />
-      )}
+        {fetching && (
+          <Loading variant="inline" text="Loading next batch of cards..." className="mb-4" />
+        )}
 
-      <div className="mb-3 flex items-center gap-3">
+        <div className="mb-3 flex items-center gap-3">
         <div className="flex-1 flex items-center gap-2">
           <Progress value={(totalReviewed / totalDue) * 100} className="h-1.5" />
           <span className="text-xs text-muted-foreground whitespace-nowrap">{totalReviewed}/{totalDue}</span>
@@ -397,18 +398,6 @@ export default function DeckReviewPage() {
             </div>
           )}
 
-          {/* Show Answer Button */}
-          {!showAnswer && (
-            <Button
-              onClick={() => setShowAnswer(true)}
-              className="w-full gap-2"
-              disabled={currentCard.card_type === 'multiple_choice' && selectedChoice === null}
-            >
-              <Eye className="h-4 w-4" />
-              Show Answer
-            </Button>
-          )}
-
           {/* Answer Display */}
           {showAnswer && (
             <>
@@ -457,56 +446,67 @@ export default function DeckReviewPage() {
                   )}
                 </div>
               )}
-
-              {/* Rating Buttons */}
-              <div>
-                <h3 className="font-semibold mb-2">How well did you remember?</h3>
-                <div className="grid grid-cols-4 gap-1">
-                  <Button
-                    variant="outline"
-                    className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 border-red-200 dark:border-red-800"
-                    onClick={() => handleSubmitReview(0)}
-                    disabled={submitting}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    <span className="font-semibold hidden sm:inline">Again</span>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">Forgot</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-orange-50 hover:bg-orange-100 dark:bg-orange-950 dark:hover:bg-orange-900 border-orange-200 dark:border-orange-800"
-                    onClick={() => handleSubmitReview(1)}
-                    disabled={submitting}
-                  >
-                    <Flame className="h-4 w-4" />
-                    <span className="font-semibold hidden sm:inline">Hard</span>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">Difficult</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800"
-                    onClick={() => handleSubmitReview(2)}
-                    disabled={submitting}
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                    <span className="font-semibold hidden sm:inline">Good</span>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">Normal</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900 border-green-200 dark:border-green-800"
-                    onClick={() => handleSubmitReview(3)}
-                    disabled={submitting}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    <span className="font-semibold hidden sm:inline">Easy</span>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">Perfect</span>
-                  </Button>
-                </div>
-              </div>
             </>
           )}
         </CardContent>
+      </div>
+      </div>
+
+      {/* Fixed Bottom Action Buttons */}
+      <div className="fixed bottom-0 left-0 right-0 p-2 md:p-4 bg-background/95 backdrop-blur-sm border-t">
+        <div className="container mx-auto max-w-3xl">
+          {!showAnswer ? (
+            <Button
+              onClick={() => setShowAnswer(true)}
+              className="w-full gap-2"
+              disabled={currentCard.card_type === 'multiple_choice' && selectedChoice === null}
+            >
+              <Eye className="h-4 w-4" />
+              Show Answer
+            </Button>
+          ) : (
+            <div>
+              <div className="grid grid-cols-4 gap-1">
+                <Button
+                  variant="outline"
+                  className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 border-red-200 dark:border-red-800"
+                  onClick={() => handleSubmitReview(0)}
+                  disabled={submitting}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span className="font-semibold hidden sm:inline">Again</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-orange-50 hover:bg-orange-100 dark:bg-orange-950 dark:hover:bg-orange-900 border-orange-200 dark:border-orange-800"
+                  onClick={() => handleSubmitReview(1)}
+                  disabled={submitting}
+                >
+                  <Flame className="h-4 w-4" />
+                  <span className="font-semibold hidden sm:inline">Hard</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900 border-blue-200 dark:border-blue-800"
+                  onClick={() => handleSubmitReview(2)}
+                  disabled={submitting}
+                >
+                  <ThumbsUp className="h-4 w-4" />
+                  <span className="font-semibold hidden sm:inline">Good</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-auto py-2 px-2 flex flex-col items-center gap-1 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900 border-green-200 dark:border-green-800"
+                  onClick={() => handleSubmitReview(3)}
+                  disabled={submitting}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span className="font-semibold hidden sm:inline">Easy</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <EditCardDialog
