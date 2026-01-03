@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api-client';
-import { Topic, Deck, CardItem, QAHintData, MultipleChoiceData, AIProvider, UserProfile } from '@/lib/types';
+import { Topic, Deck, CardItem, QAHintData, MultipleChoiceData, AIProvider } from '@/lib/types';
 import { Card as CardUI, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,7 +26,7 @@ import EditCardDialog, { GeneratedCard } from '@/components/edit-card-dialog';
 import { AI_PROVIDERS, DEFAULT_PROVIDER, getDefaultModel } from '@/lib/ai-providers';
 
 export default function TopicDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const topicId = params.id as string;
@@ -59,9 +59,6 @@ export default function TopicDetailPage() {
   // Topic deletion state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // User profile state
-  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   // AI Provider state
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>(() => {
@@ -107,12 +104,6 @@ export default function TopicDetailPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
-
-  useEffect(() => {
-    if (user) {
-      apiClient.getProfile().then(setProfile).catch(console.error);
-    }
-  }, [user]);
 
   useEffect(() => {
     if (user && topicId) {
@@ -182,7 +173,7 @@ export default function TopicDetailPage() {
   };
 
   // === Generated cards handlers ===
-  const isPremiumUser = profile?.role === 'admin' || profile?.role === 'pro';
+  const isPremiumUser = role === 'admin' || role === 'pro';
 
   // Reset provider to default for premium users
   useEffect(() => {

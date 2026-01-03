@@ -4,7 +4,6 @@ import {
   TopicListResponse,
   Card,
   CardItem,
-  UserProfile,
   ReviewResponse,
   DeckReviewResponse,
   CreateDeckRequest,
@@ -15,8 +14,6 @@ import {
   CardCreateBatch,
   UpdateCardRequest,
   ReviewSubmission,
-  CreateProfileRequest,
-  UpdateProfileRequest,
   ApiError,
   AIProvider,
   GenerateCardsOptions,
@@ -192,39 +189,6 @@ class ApiClient {
   ): Promise<ReviewResponse> {
     return this.request(`/review/topics/${topicId}/cards/${cardIndex}/submit`, {
       method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // Profile
-  async createProfile(data: CreateProfileRequest): Promise<UserProfile> {
-    return this.request('/profile/', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getProfile(): Promise<UserProfile> {
-    return this.request('/profile/');
-  }
-
-  async updateProfile(data: UpdateProfileRequest): Promise<UserProfile> {
-    return this.request('/profile/', {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getProfileById(userId: string): Promise<UserProfile> {
-    return this.request(`/profile/${userId}`);
-  }
-
-  async updateProfileById(
-    userId: string,
-    data: UpdateProfileRequest
-  ): Promise<UserProfile> {
-    return this.request(`/profile/${userId}`, {
-      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }

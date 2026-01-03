@@ -75,16 +75,6 @@ export interface MultipleChoiceCard extends BaseCard {
 
 export type Card = QAHintCard | MultipleChoiceCard;
 
-export interface UserProfile {
-  user_id: string;
-  username: string;
-  avatar: string | null;
-  role: 'user' | 'admin' | 'pro';
-  ai_prompts: Record<string, any>;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
 export interface ReviewSubmission {
   base_score: 0 | 1 | 2 | 3;
 }
@@ -169,18 +159,6 @@ export interface UpdateCardRequest {
   choices?: string[];
   correct_index?: number;
   explanation?: string;
-}
-
-export interface CreateProfileRequest {
-  username: string;
-  avatar?: string;
-  ai_prompts?: Record<string, any>;
-}
-
-export interface UpdateProfileRequest {
-  username?: string;
-  avatar?: string;
-  ai_prompts?: Record<string, any>;
 }
 
 export interface ApiError {

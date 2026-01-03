@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { apiClient } from '@/lib/api-client';
-import { Deck, Topic, TopicListResponse, UserProfile } from '@/lib/types';
+import { Deck, Topic, TopicListResponse } from '@/lib/types';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ interface GeneratedCard {
 }
 
 export default function DeckDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const deckId = params.id as string;
@@ -87,9 +87,6 @@ export default function DeckDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // User profile state
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-
   // AI Provider state
   const [selectedProvider, setSelectedProvider] = useState<AIProvider>(() => {
     if (typeof window !== 'undefined') {
@@ -134,12 +131,6 @@ export default function DeckDetailPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
-
-  useEffect(() => {
-    if (user) {
-      apiClient.getProfile().then(setProfile).catch(console.error);
-    }
-  }, [user]);
 
   useEffect(() => {
     if (user && deckId) {
@@ -200,7 +191,7 @@ export default function DeckDetailPage() {
     }
   };
 
-  const isPremiumUser = profile?.role === 'admin' || profile?.role === 'pro';
+  const isPremiumUser = role === 'admin' || role === 'pro';
 
   // Reset provider to default for premium users
   useEffect(() => {

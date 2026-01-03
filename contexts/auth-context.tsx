@@ -9,11 +9,15 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
+  username: string;
+  avatar: string;
+  role: 'user' | 'admin' | 'pro';
+  signUp: (email: string, password: string, username: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  updateProfile: (username: string, avatar: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,10 +69,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string, username: string) => {
+    const randomNumber = Math.floor(Math.random() * 100) + 1;
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          username,
+          avatar: `https://avatar.iran.liara.run/public/${randomNumber}`,
+          role: 'user',
+        },
+      },
     });
     if (error) throw error;
   }, []);
@@ -100,18 +112,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   }, []);
 
+  const updateProfile = useCallback(async (username: string, avatar: string) => {
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        username,
+        avatar,
+      },
+    });
+    if (error) throw error;
+  }, []);
+
+  const username = user?.user_metadata?.username ?? 'User';
+  const avatar = user?.user_metadata?.avatar ?? '';
+  const role = (user?.user_metadata?.role ?? 'user') as 'user' | 'admin' | 'pro';
+
   const value = useMemo(
     () => ({
       user,
       session,
       loading,
+      username,
+      avatar,
+      role,
       signUp,
       signIn,
       signOut,
       resetPassword,
       updatePassword,
+      updateProfile,
     }),
-    [user, session, loading, signUp, signIn, signOut, resetPassword, updatePassword]
+    [user, session, loading, username, avatar, role, signUp, signIn, signOut, resetPassword, updatePassword, updateProfile]
   );
 
   return (

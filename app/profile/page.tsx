@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
-import { apiClient } from '@/lib/api-client';
-import { UserProfile } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,10 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function ProfilePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, username, avatar, role, loading: authLoading, updateProfile } = useAuth();
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editing, setEditing] = useState(false);
@@ -30,23 +26,10 @@ export default function ProfilePage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
+    if (username && avatar !== undefined) {
+      setFormData({ username, avatar });
     }
-  }, [user]);
-
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      const data = await apiClient.getProfile();
-      setProfile(data);
-      setFormData({ username: data.username, avatar: data.avatar || '' });
-    } catch (err: any) {
-      setError(err.message || 'Failed to load profile');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [username, avatar]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,11 +38,7 @@ export default function ProfilePage() {
     setSuccess('');
 
     try {
-      const updated = await apiClient.updateProfile({
-        username: formData.username,
-        avatar: formData.avatar || undefined,
-      });
-      setProfile(updated);
+      await updateProfile(formData.username, formData.avatar);
       setEditing(false);
       setSuccess('Profile updated successfully!');
       setTimeout(() => setSuccess(''), 3000);
@@ -71,9 +50,7 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    if (profile) {
-      setFormData({ username: profile.username, avatar: profile.avatar || '' });
-    }
+    setFormData({ username, avatar });
     setEditing(false);
     setError('');
   };
@@ -101,20 +78,13 @@ export default function ProfilePage() {
         </Alert>
       )}
 
-      {loading ? (
-        <Loading variant="content" text="Loading profile..." />
-      ) : !profile ? (
-        <Alert variant="destructive">
-          <AlertDescription>Profile not found. Please try signing out and back in.</AlertDescription>
-        </Alert>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-            <CardDescription>View and update your profile details</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {editing ? (
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Information</CardTitle>
+          <CardDescription>View and update your profile details</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {editing ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="username">Username</Label>
@@ -154,38 +124,38 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-4 mb-6">
-                  {profile.avatar ? (
+                  {avatar ? (
                     <img 
-                      src={profile.avatar} 
+                      src={avatar} 
                       alt="Avatar" 
                       className="w-20 h-20 rounded-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&size=80`;
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&size=80`;
                       }}
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
-                      <span className="text-2xl font-bold">{profile.username[0].toUpperCase()}</span>
+                      <span className="text-2xl font-bold">{username[0]?.toUpperCase()}</span>
                     </div>
                   )}
                   <div>
-                    <h3 className="text-xl font-semibold">{profile.username}</h3>
-                    <p className="text-sm text-muted-foreground capitalize">{profile.role}</p>
+                    <h3 className="text-xl font-semibold">{username}</h3>
+                    <p className="text-sm text-muted-foreground capitalize">{role}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div>
                     <Label className="text-muted-foreground">Email</Label>
-                    <p className="font-medium">{user.email}</p>
+                    <p className="font-medium">{user?.email}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">User ID</Label>
-                    <p className="font-mono text-sm">{profile.user_id}</p>
+                    <p className="font-mono text-sm">{user?.id}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Member Since</Label>
-                    <p>{profile.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}</p>
+                    <p>{user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</p>
                   </div>
                 </div>
 
@@ -196,7 +166,6 @@ export default function ProfilePage() {
             )}
           </CardContent>
         </Card>
-      )}
-    </div>
-  );
-}
+      </div>
+    );
+  }
