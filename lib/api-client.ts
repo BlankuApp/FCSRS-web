@@ -18,6 +18,8 @@ import {
   AIProvider,
   GenerateCardsOptions,
   GenerateCardsResponse,
+  UserListResponse,
+  UpdateUserRoleResponse,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -208,6 +210,37 @@ class ApiClient {
         model: options.model,
         api_key: options.apiKey,
       }),
+    });
+  }
+
+  // Admin - User Management
+  async listUsers(params?: {
+    page?: number;
+    page_size?: number;
+    sort_by?: 'email' | 'username' | 'role' | 'created_at';
+    sort_order?: 'asc' | 'desc';
+    role?: 'user' | 'pro' | 'admin';
+    search?: string;
+  }): Promise<UserListResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+    if (params?.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params?.sort_order) queryParams.append('sort_order', params.sort_order);
+    if (params?.role) queryParams.append('role', params.role);
+    if (params?.search) queryParams.append('search', params.search);
+
+    const query = queryParams.toString();
+    return this.request(`/admin/users${query ? `?${query}` : ''}`);
+  }
+
+  async updateUserRole(
+    userId: string,
+    role: 'user' | 'pro' | 'admin'
+  ): Promise<UpdateUserRoleResponse> {
+    return this.request(`/admin/users/${userId}/role`, {
+      method: 'POST',
+      body: JSON.stringify({ role }),
     });
   }
 }

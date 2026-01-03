@@ -197,3 +197,33 @@ export interface GeneratedCardResponse {
 export interface GenerateCardsResponse {
   cards: GeneratedCardResponse[];
 }
+
+// User Management Types (Admin)
+export interface UserInfo {
+  id: string;
+  email: string;
+  username: string;
+  avatar: string | null;
+  role: 'user' | 'pro' | 'admin';
+  created_at: string;
+}
+
+export interface UserListResponse {
+  items: UserInfo[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
+export interface UpdateUserRoleRequest {
+  role: 'user' | 'pro' | 'admin';
+}
+
+export interface UpdateUserRoleResponse {
+  user_id: string;
+  role: string;
+  message: string;
+}

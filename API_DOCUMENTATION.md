@@ -14,7 +14,7 @@
   - [Decks](#decks)
   - [Topics](#topics)
   - [Review](#review)
-  - [Profile](#profile)
+  - [Admin](#admin)
   - [AI Generation](#ai-generation)
 - [SRS Algorithm & Review Workflow](#srs-algorithm--review-workflow)
 - [Database Schema](#database-schema)
@@ -181,17 +181,6 @@ interface TopicListResponse {
   has_prev: boolean;             // Whether there is a previous page
 }
 
-// User Profile
-interface UserProfile {
-  user_id: string;               // UUID
-  username: string;              // 3-50 chars, alphanumeric + _ and -
-  avatar: string | null;         // HTTP/HTTPS URL
-  role: 'user' | 'admin';        // Default: 'user'
-  ai_prompts: Record<string, any>; // Custom AI prompts configuration
-  created_at: string | null;
-  updated_at: string | null;
-}
-
 // Review Card Item (includes topic_id and card_index for tracking)
 interface ReviewCardItem {
   topic_id: string;              // Parent topic UUID
@@ -287,18 +276,36 @@ interface UpdateCardRequest {
   explanation?: string;          // Multiple Choice only
 }
 
-// Create Profile
-interface CreateProfileRequest {
-  username: string;              // Required, 3-50 chars
-  avatar?: string;               // HTTP/HTTPS URL
-  ai_prompts?: Record<string, any>;
+// Admin - Update User Role
+interface UpdateUserRoleRequest {
+  role: 'user' | 'pro' | 'admin'; // Target role
 }
 
-// Update Profile
-interface UpdateProfileRequest {
-  username?: string;             // 3-50 chars
-  avatar?: string;               // HTTP/HTTPS URL
-  ai_prompts?: Record<string, any>;
+interface UpdateUserRoleResponse {
+  user_id: string;               // UUID of updated user
+  role: string;                  // New role
+  message: string;               // Success message
+}
+
+// User Info (Admin)
+interface UserInfo {
+  id: string;                    // UUID of user
+  email: string;                 // User email address
+  username: string;              // Display name (default: "User")
+  avatar: string | null;         // Avatar URL (can be null)
+  role: string;                  // User role: 'user', 'pro', or 'admin'
+  created_at: string;            // ISO 8601 datetime
+}
+
+// User List Response (Paginated)
+interface UserListResponse {
+  items: UserInfo[];             // Users on current page
+  total: number;                 // Total number of users (after filtering)
+  page: number;                  // Current page number (1-based)
+  page_size: number;             // Items per page
+  total_pages: number;           // Total number of pages
+  has_next: boolean;             // Whether there is a next page
+  has_prev: boolean;             // Whether there is a previous page
 }
 
 // AI Provider Types
@@ -1058,83 +1065,146 @@ Body: { base_score: 2 }
 
 ---
 
-### Profile
+### Admin
 
-#### `POST /profile/` 🔒
-Create a new user profile
-
-**Request Body:** `CreateProfileRequest`
-
-**Response:** `201 Created` → `UserProfile`
-
-**Errors:**
-- `400` - Validation error
-- `401` - Unauthorized
-- `409` - Username already taken
-
-**Important:** Profiles must be created explicitly after user registration with Supabase.
-
----
-
-#### `GET /profile/` 🔒
-Get current user's profile
-
-**Response:** `200 OK` → `UserProfile`
-
-**Errors:**
-- `401` - Unauthorized
-- `404` - Profile not found
-
----
-
-#### `PATCH /profile/` 🔒
-Update current user's profile
-
-**Request Body:** `UpdateProfileRequest`
-
-**Response:** `200 OK` → `UserProfile`
-
-**Errors:**
-- `400` - Validation error (no fields to update)
-- `401` - Unauthorized
-- `404` - Profile not found
-- `409` - Username already taken
-
-**Note:** The `role` field cannot be changed via API (database-only).
-
----
-
-#### `GET /profile/{user_id}` 🔒 (Admin Only)
-Get any user's profile by ID
+#### `POST /admin/users/{user_id}/role` 🔒 (Admin Only)
+Update a user's role
 
 **Path Parameters:**
-- `user_id` (string, UUID) - User ID
+- `user_id` (string, UUID) - Target user ID
 
-**Response:** `200 OK` → `UserProfile`
+**Request Body:** `UpdateUserRoleRequest`
+
+**Response:** `200 OK` → `UpdateUserRoleResponse`
+
+**Example Request:**
+```json
+{
+  "role": "pro"
+}
+```
+
+**Example Response:**
+```json
+{
+  "user_id": "123e4567-e89b-12d3-a456-426614174000",
+  "role": "pro",
+  "message": "Role updated to 'pro' successfully. User must re-login for changes to take effect."
+}
+```
+
+**Role Types:**
+- `user` - Default role (free tier, must provide own API keys for AI generation)
+- `pro` - Premium user (can use server-side AI API keys)
+- `admin` - Administrator (full access + can use server-side AI API keys)
+
+**Errors:**
+- `400` - Invalid role value
+- `401` - Unauthorized
+- `403` - Forbidden (not admin)
+- `404` - User not found
+- `500` - Failed to update role
+
+**Important Notes:**
+- Only admin users can update roles
+- Role is stored in Supabase auth `user_metadata.role`
+- Users must re-login (refresh JWT token) for role changes to take effect
+- Role changes are immediate in the database but require token refresh for API authorization
+
+---
+
+#### `GET /admin/users` 🔒 (Admin Only)
+List all users with pagination, filtering, and search
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Required | Description |
+|-----------|------|---------|----------|-------------|
+| `page` | integer | 1 | No | Page number (1-based, minimum: 1) |
+| `page_size` | integer | 25 | No | Items per page (minimum: 1, maximum: 100) |
+| `sort_by` | string | `"created_at"` | No | Field to sort by (see sortable fields below) |
+| `sort_order` | string | `"desc"` | No | Sort direction: `"asc"` or `"desc"` |
+| `role` | string | null | No | Filter by role: `"user"`, `"pro"`, or `"admin"` |
+| `search` | string | null | No | Search in email or username (case-insensitive substring) |
+
+**Sortable Fields:**
+
+| Field | Description | Data Type |
+|-------|-------------|----------|
+| `email` | User email address (alphabetical) | string |
+| `username` | Display name (alphabetical) | string |
+| `role` | User role | string |
+| `created_at` | Account creation date | datetime |
+
+**Response:** `200 OK` → `UserListResponse`
 
 **Errors:**
 - `401` - Unauthorized
 - `403` - Forbidden (not admin)
-- `404` - Profile not found
+- `422` - Invalid query parameters
+- `500` - Failed to list users
 
----
+**Example Requests:**
 
-#### `PATCH /profile/{user_id}` 🔒 (Admin Only)
-Update any user's profile by ID
+```typescript
+// Get first page (default: 25 users, sorted by created_at descending)
+GET /admin/users?page=1
 
-**Path Parameters:**
-- `user_id` (string, UUID) - User ID
+// Get second page with 50 users per page
+GET /admin/users?page=2&page_size=50
 
-**Request Body:** `UpdateProfileRequest`
+// Sort by email (alphabetical)
+GET /admin/users?sort_by=email&sort_order=asc
 
-**Response:** `200 OK` → `UserProfile`
+// Filter by role (only pro users)
+GET /admin/users?role=pro
 
-**Errors:**
-- `400` - Validation error
-- `401` - Unauthorized
-- `403` - Forbidden (not admin)
-- `404` - Profile not found
-- `409` - Username already taken
+// Search for users with "john" in email or username
+GET /admin/users?search=john
+
+// Combine: search for admins with "smith" in email/username, sorted by username
+GET /admin/users?role=admin&search=smith&sort_by=username&sort_order=asc
+```
+
+**Example Response:**
+
+```typescript
+{
+  items: [
+    {
+      id: "123e4567-e89b-12d3-a456-426614174000",
+      email: "john.doe@example.com",
+      username: "John Doe",
+      avatar: "https://avatar.iran.liara.run/public/42",
+      role: "pro",
+      created_at: "2025-12-01T10:30:00Z"
+    },
+    {
+      id: "987fcdeb-51a2-43f7-9c8d-6e5a4b3c2d1e",
+      email: "jane.smith@example.com",
+      username: "Jane Smith",
+      avatar: null,
+      role: "user",
+      created_at: "2025-12-15T14:20:00Z"
+    }
+  ],
+  total: 2,
+  page: 1,
+  page_size: 25,
+  total_pages: 1,
+  has_next: false,
+  has_prev: false
+}
+```
+
+**Notes:**
+- Only admin users can list all users
+- Username defaults to "User" if not set during signup
+- Avatar can be null if not set
+- Role defaults to "user" if not set in user_metadata
+- Search is case-insensitive and matches substrings in both email and username fields
+- Total count reflects the number of users after filtering (not all users in the system)
+- Results are fetched from Supabase auth system, not from a user_profiles table
 
 ---
 
@@ -1608,44 +1678,26 @@ CREATE TABLE user_profiles (
 
 ---
 
-### Profile Creation Requirement
+### User Roles and Permissions
 
-**Important:** User profiles must be created explicitly after Supabase authentication.
+**Role System:**
+User roles are managed through Supabase auth metadata and included in JWT tokens:
 
-The signup flow in the application handles profile creation during user registration. After Supabase authentication completes and the session token is available, the frontend calls the `POST /profile/` endpoint to create the user profile.
+- **user** (default): Free tier, must provide own API keys for AI generation
+- **pro**: Premium tier, can use server-side AI API keys
+- **admin**: Full access including role management and server-side AI keys
 
-**Implementation flow:**
-```typescript
-// During signup (after Supabase auth completes)
-// 1. Sign up with Supabase
-await signUp(email, password);
-await signIn(email, password);
+**Role Storage:**
+- Roles are stored in `auth.users.raw_app_meta_data.role`
+- Automatically set to `'user'` on signup via database trigger
+- Included in JWT `user_metadata.role` for fast authorization
+- Updated via admin endpoint using Supabase Admin SDK
 
-// 2. Wait for auth state to update and token to be available
-await waitForAuthToken();
-
-// 3. Create profile with the authenticated token
-await createProfile(token, {
-  username: 'user123',
-  avatar: 'https://example.com/avatar.jpg'
-});
-```
-
-**For existing users checking profile status:**
-```typescript
-// Check if profile exists
-try {
-  const profile = await getProfile(token);
-} catch (error) {
-  if (error.status === 404) {
-    // Profile doesn't exist, create one
-    await createProfile(token, {
-      username: 'user123',
-      avatar: 'https://example.com/avatar.jpg'
-    });
-  }
-}
-```
+**Username and Avatar:**
+- Stored in `auth.users.raw_user_meta_data`
+- Set during signup or updated via `supabase.auth.updateUser()`
+- Username defaults to "User" if not provided
+- Avatar defaults to random avatar from https://avatar.iran.liara.run/public/1-100
 
 ---
 

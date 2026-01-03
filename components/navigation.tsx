@@ -12,13 +12,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Menu, BookOpen, LayoutDashboard, User, LogOut } from 'lucide-react';
+import { Menu, BookOpen, LayoutDashboard, User, LogOut, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, role } = useAuth();
   const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -57,6 +57,12 @@ export default function Navigation() {
       icon: User,
       active: pathname === '/profile',
     },
+    ...(role === 'admin' ? [{
+      href: '/admin/users',
+      label: 'User Management',
+      icon: Users,
+      active: pathname === '/admin/users',
+    }] : []),
   ];
 
   return (
