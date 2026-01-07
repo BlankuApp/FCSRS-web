@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/signup', '/'];
+  const publicRoutes = ['/login', '/signup', '/', '/auth/callback'];
   const { pathname } = request.nextUrl;
 
   // Allow public routes
