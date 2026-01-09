@@ -61,4 +61,25 @@ const InputGroupButton = React.forwardRef<
 })
 InputGroupButton.displayName = "InputGroupButton"
 
-export { InputGroup, InputGroupInput, InputGroupButton }
+const InputGroupAddon = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    align?: "block-start" | "block-end"
+  }
+>(({ className, align = "block-start", ...props }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex items-center gap-3 px-3",
+        align === "block-end" && "self-end",
+        align === "block-start" && "self-start",
+        className
+      )}
+      {...props}
+    />
+  )
+})
+InputGroupAddon.displayName = "InputGroupAddon"
+
+export { InputGroup, InputGroupInput, InputGroupButton, InputGroupAddon }
