@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import TextareaAutosize from 'react-textarea-autosize';
 import { useDeck } from '@/contexts/deck-context';
 import { useAISettings } from '@/contexts/ai-settings-context';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
-import { InputGroup, InputGroupInput, InputGroupButton } from '@/components/ui/input-group';
 import Loading from '@/components/loading';
 import AIProviderSettings from '@/components/ai-provider-settings';
 import GeneratedCardsList from '@/components/generated-cards-list';
@@ -73,8 +73,8 @@ export default function CreateTopicPage() {
     }
   };
 
-  const handleTopicNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && topicName.trim() && !isGenerating && !isAdding && deck?.prompt && (isPremiumUser || apiKey.trim())) {
+  const handleTopicNameKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && topicName.trim() && !isGenerating && !isAdding && deck?.prompt && (isPremiumUser || apiKey.trim())) {
       e.preventDefault();
       handleGenerateCards();
     }
@@ -163,32 +163,37 @@ export default function CreateTopicPage() {
       <AIProviderSettings disabled={isGenerating || isAdding} />
 
       <div className="space-y-2">
-        <InputGroup>
-          <InputGroupInput
+        <div className="relative">
+          <TextareaAutosize
             id="topicName"
             value={topicName}
             onChange={(e) => setTopicName(e.target.value)}
-            onKeyDown={handleTopicNameKeyDown}
             placeholder="e.g., Present Tense Verbs"
-            maxLength={255}
+            maxLength={500}
             disabled={isGenerating || isAdding}
-            autoComplete="off"
+            className="field-sizing-content min-h-32 w-full resize-none rounded-md border border-input bg-transparent px-3 py-2.5 pb-14 text-base transition-[color,box-shadow] outline-none md:text-sm placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
           />
-          <InputGroupButton
-            type="button"
-            onClick={handleGenerateCards}
-            disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt || (!isPremiumUser && !apiKey.trim())}
-          >
-            {isGenerating ? (
-              <>
-                <Loading variant="spinner" size="sm" className="mr-2" />
-                Generating...
-              </>
-            ) : (
-              'Generate Cards'
-            )}
-          </InputGroupButton>
-        </InputGroup>
+          <div className="absolute bottom-3 right-3 flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">
+              {topicName.length}/500
+            </span>
+            <Button
+              type="button"
+              onClick={handleGenerateCards}
+              disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt || (!isPremiumUser && !apiKey.trim())}
+              size="sm"
+            >
+              {isGenerating ? (
+                <>
+                  <Loading variant="spinner" size="sm" className="mr-2" />
+                  Generating...
+                </>
+              ) : (
+                'Generate Cards'
+              )}
+            </Button>
+          </div>
+        </div>
         {!deck?.prompt && (
           <p className="text-sm text-muted-foreground">Please add a prompt in the Prompt tab first</p>
         )}
