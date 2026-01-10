@@ -315,7 +315,7 @@ export default function DeckReviewPage() {
           <Loading variant="inline" text="Loading next batch of cards..." className="mb-4" />
         )}
 
-        <div className="flex items-center gap-3 px-3 md:px-0">
+        <div className="flex items-center gap-1 px-3 md:px-0 py-0 md:py-3">
         <div className="flex-1 flex items-center gap-2">
           <Progress value={(totalReviewed / totalDue) * 100} className="h-1.5" />
           <span className="text-xs text-muted-foreground whitespace-nowrap">{totalReviewed}/{totalDue}</span>

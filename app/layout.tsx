@@ -83,7 +83,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <Navigation />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-[calc(100vh-4rem-1px)]">{children}</main>
         </AuthProvider>
         <Toaster />
         <Analytics />
