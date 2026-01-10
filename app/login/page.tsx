@@ -113,7 +113,6 @@ export default function LoginPage() {
           <Card className="w-full max-w-md border-border/50 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl">Sign In</CardTitle>
-              <CardDescription>Enter your email and password to access your account</CardDescription>
             </CardHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -157,9 +156,10 @@ export default function LoginPage() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+                      <span className="bg-white px-2 text-muted-foreground">Or</span>
                     </div>
                   </div>
+                  <div className="text-sm text-center text-muted-foreground">Enter your email and password to access your account</div>
 
                   <FormField
                     control={form.control}

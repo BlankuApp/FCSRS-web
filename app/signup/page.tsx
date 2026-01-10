@@ -120,7 +120,6 @@ export default function SignUpPage() {
           <Card className="w-full max-w-md border-border/50 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl">Sign Up</CardTitle>
-              <CardDescription>Create a new account to get started</CardDescription>
             </CardHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -164,9 +163,10 @@ export default function SignUpPage() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+                      <span className="bg-white px-2 text-muted-foreground">Or</span>
                     </div>
                   </div>
+                  <div className="text-sm text-center text-muted-foreground">Create a new account to get started</div>
 
                   <FormField
                     control={form.control}

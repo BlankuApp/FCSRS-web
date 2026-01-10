@@ -257,7 +257,7 @@ export default function DeckPracticePage() {
   }
 
   return (
-    <div className="container mx-auto p-2 md:p-4 max-w-3xl flex flex-col min-h-screen">
+    <div className="container mx-auto max-w-3xl flex flex-col min-h-screen">
       <div className="flex-1 overflow-y-auto pb-24">
         {error && (
           <Alert variant="destructive" className="mb-4">
@@ -269,7 +269,7 @@ export default function DeckPracticePage() {
           <Loading variant="inline" text="Loading next batch of cards..." className="mb-4" />
         )}
 
-        <div className="mb-3 flex items-center gap-3">
+        <div className="flex items-center gap-3 px-3 md:px-0">
         <div className="flex-1 flex items-center gap-2">
           <Progress value={(currentIndex / cards.length) * 100} className="h-1.5" />
           <span className="text-xs text-muted-foreground whitespace-nowrap">{currentIndex + 1}/{cards.length}</span>
@@ -337,7 +337,7 @@ export default function DeckPracticePage() {
               {(currentCard.card_data as MultipleChoiceData).choices.map((choice, index) => (
                 <Button
                   key={index}
-                  variant={selectedChoice === index ? 'default' : 'outline'}
+                  variant={selectedChoice === index ? 'secondary' : 'outline'}
                   className="w-full justify-start text-left h-auto py-3 px-4 whitespace-normal"
                   onClick={() => setSelectedChoice(index)}
                 >

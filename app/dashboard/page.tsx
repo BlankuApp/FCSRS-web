@@ -110,7 +110,7 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-8 max-w-2xl mx-auto">
         <div>
           <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
           <p className="text-muted-foreground">Review your due topics by deck</p>
