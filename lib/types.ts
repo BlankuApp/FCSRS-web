@@ -200,6 +200,7 @@ export interface GenerateCardsResponse {
   output_tokens: number | null;
   total_tokens: number | null;
   cost_usd: number | null;
+  remaining_credits: number | null;
 }
 
 // User Management Types (Admin)
@@ -209,6 +210,8 @@ export interface UserInfo {
   username: string;
   avatar: string | null;
   role: 'user' | 'pro' | 'admin';
+  credits: number | null;
+  total_spent: number | null;
   created_at: string;
 }
 
@@ -229,5 +232,16 @@ export interface UpdateUserRoleRequest {
 export interface UpdateUserRoleResponse {
   user_id: string;
   role: string;
+  message: string;
+}
+
+export interface AddCreditsRequest {
+  credits: number;
+}
+
+export interface UserCreditsResponse {
+  user_id: string;
+  credits: number;
+  total_spent: number;
   message: string;
 }

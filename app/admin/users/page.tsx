@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search, Filter, Edit } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Search, Filter, Edit, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import EmptyState from '@/components/empty-state';
 import EditUserRoleDialog from '@/components/edit-user-role-dialog';
+import EditUserCreditsDialog from '@/components/edit-user-credits-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,9 @@ export default function AdminUsersPage() {
   
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserInfo | null>(null);
+  
+  const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
+  const [selectedUserForCredits, setSelectedUserForCredits] = useState<UserInfo | null>(null);
 
   // Auth and role check
   useEffect(() => {
@@ -116,7 +120,16 @@ export default function AdminUsersPage() {
     setEditDialogOpen(true);
   };
 
+  const handleAddCredits = (user: UserInfo) => {
+    setSelectedUserForCredits(user);
+    setCreditsDialogOpen(true);
+  };
+
   const handleRoleUpdateSuccess = () => {
+    fetchUsers(); // Refresh the list
+  };
+
+  const handleCreditsUpdateSuccess = () => {
     fetchUsers(); // Refresh the list
   };
 
@@ -248,6 +261,8 @@ export default function AdminUsersPage() {
                         {getSortIcon('role')}
                       </button>
                     </TableHead>
+                    <TableHead>Credits</TableHead>
+                    <TableHead>Total Spent</TableHead>
                     <TableHead>
                       <button
                         onClick={() => handleSort('created_at')}
@@ -273,18 +288,34 @@ export default function AdminUsersPage() {
                           {userItem.role}
                         </span>
                       </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {userItem.credits !== null ? userItem.credits.toFixed(6) : 'N/A'}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {userItem.total_spent !== null ? userItem.total_spent.toFixed(6) : 'N/A'}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatDate(userItem.created_at)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditRole(userItem)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Role
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditRole(userItem)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Role
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAddCredits(userItem)}
+                          >
+                            <Coins className="h-4 w-4 mr-2" />
+                            Add Credits
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -325,6 +356,13 @@ export default function AdminUsersPage() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSuccess={handleRoleUpdateSuccess}
+      />
+
+      <EditUserCreditsDialog
+        user={selectedUserForCredits}
+        open={creditsDialogOpen}
+        onOpenChange={setCreditsDialogOpen}
+        onSuccess={handleCreditsUpdateSuccess}
       />
     </>
   );

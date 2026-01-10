@@ -80,6 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           username,
           avatar: `https://avatar.iran.liara.run/public/${randomNumber}`,
           role: 'user',
+          credits: 1.0,
+          total_spent: 0.0,
         },
       },
     });

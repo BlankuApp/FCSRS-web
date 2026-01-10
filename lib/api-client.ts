@@ -20,6 +20,8 @@ import {
   GenerateCardsResponse,
   UserListResponse,
   UpdateUserRoleResponse,
+  AddCreditsRequest,
+  UserCreditsResponse,
 } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -242,6 +244,20 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ role }),
     });
+  }
+
+  async addCredits(
+    userId: string,
+    credits: number
+  ): Promise<UserCreditsResponse> {
+    return this.request(`/admin/users/${userId}/credits/add`, {
+      method: 'POST',
+      body: JSON.stringify({ credits }),
+    });
+  }
+
+  async getUserCredits(userId: string): Promise<UserCreditsResponse> {
+    return this.request(`/admin/users/${userId}/credits`);
   }
 }
 

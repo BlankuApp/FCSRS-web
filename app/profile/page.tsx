@@ -157,6 +157,14 @@ export default function ProfilePage() {
                     <Label className="text-muted-foreground">Member Since</Label>
                     <p>{user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</p>
                   </div>
+                  <div>
+                    <Label className="text-muted-foreground">Credits Balance</Label>
+                    <p className="font-mono">{(user?.user_metadata?.credits ?? 0).toFixed(6)} credits</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Total Spent</Label>
+                    <p className="font-mono">{(user?.user_metadata?.total_spent ?? 0).toFixed(6)} credits</p>
+                  </div>
                 </div>
 
                 <Button onClick={() => setEditing(true)} className="mt-4">
