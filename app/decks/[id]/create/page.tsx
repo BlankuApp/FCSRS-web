@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import TextareaAutosize from 'react-textarea-autosize';
+import { Sparkles, Hash, DollarSign, Plus } from 'lucide-react';
 import { useDeck } from '@/contexts/deck-context';
 import { useAISettings } from '@/contexts/ai-settings-context';
 import { useAuth } from '@/contexts/auth-context';
@@ -35,6 +36,13 @@ export default function CreateTopicPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
+  const [tokenUsage, setTokenUsage] = useState<{
+    input_tokens: number | null;
+    output_tokens: number | null;
+    total_tokens: number | null;
+    cost_usd: number | null;
+  } | null>(null);
+
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
@@ -58,6 +66,7 @@ export default function CreateTopicPage() {
 
     setIsGenerating(true);
     setGeneratedCards([]);
+    setTokenUsage(null);
 
     try {
       const response = await apiClient.generateCards(deck.prompt, topicName, {
@@ -66,6 +75,12 @@ export default function CreateTopicPage() {
         apiKey: apiKey,
       });
       setGeneratedCards(response.cards);
+      setTokenUsage({
+        input_tokens: response.input_tokens,
+        output_tokens: response.output_tokens,
+        total_tokens: response.total_tokens,
+        cost_usd: response.cost_usd,
+      });
     } catch (err: any) {
       toast.error(err.message || 'Failed to generate cards');
     } finally {
@@ -142,10 +157,8 @@ export default function CreateTopicPage() {
       // Reset form and show success
       setTopicName('');
       setGeneratedCards([]);
+      setTokenUsage(null);
       toast.success(`Topic "${topic.name}" created with ${generatedCards.length} cards!`);
-      
-      // Optionally navigate to topics page
-      router.push(`/decks/${deckId}/topics`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to add topic');
     } finally {
@@ -189,7 +202,10 @@ export default function CreateTopicPage() {
                   Generating...
                 </>
               ) : (
-                'Generate Cards'
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Cards
+                </>
               )}
             </Button>
           </div>
@@ -202,6 +218,43 @@ export default function CreateTopicPage() {
       {/* Generated Cards Preview */}
       {generatedCards.length > 0 && (
         <div className="space-y-3">
+          {/* Token Usage and Cost Information */}
+          {tokenUsage && (tokenUsage.total_tokens !== null || tokenUsage.cost_usd !== null) && (
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3">
+              <div className="flex items-center justify-between text-sm">
+                {tokenUsage.total_tokens !== null && (
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Total tokens:</span>
+                    <span className="font-medium">{tokenUsage.total_tokens.toLocaleString()}</span>
+                  </div>
+                )}
+                {tokenUsage.cost_usd !== null && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Cost:</span>
+                    <span className="font-medium">${tokenUsage.cost_usd.toFixed(6)} USD</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={handleAddTopic}
+            disabled={!topicName.trim() || generatedCards.length === 0 || isAdding}
+            className="w-full"
+          >
+            {isAdding ? (
+              'Adding...'
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Topic with {generatedCards.length} Cards
+              </>
+            )}
+          </Button>
+
           <GeneratedCardsList
             cards={generatedCards}
             onEdit={handleEditCard}
@@ -213,7 +266,14 @@ export default function CreateTopicPage() {
             disabled={!topicName.trim() || generatedCards.length === 0 || isAdding}
             className="w-full"
           >
-            {isAdding ? 'Adding...' : `Add Topic with ${generatedCards.length} Cards`}
+            {isAdding ? (
+              'Adding...'
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Topic with {generatedCards.length} Cards
+              </>
+            )}
           </Button>
         </div>
       )}

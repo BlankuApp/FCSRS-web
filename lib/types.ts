@@ -196,6 +196,10 @@ export interface GeneratedCardResponse {
 
 export interface GenerateCardsResponse {
   cards: GeneratedCardResponse[];
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  cost_usd: number | null;
 }
 
 // User Management Types (Admin)

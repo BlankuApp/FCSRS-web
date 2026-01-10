@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Pencil, ArrowLeft, Check, X, Settings, Lock } from 'lucide-react';
+import { Loader2, Trash2, Pencil, ArrowLeft, Check, X, Settings, Lock, Hash, DollarSign, Plus, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -46,6 +46,13 @@ export default function TopicDetailPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingGeneratedCardIndex, setEditingGeneratedCardIndex] = useState<number | null>(null);
   const [generatedCardDialogOpen, setGeneratedCardDialogOpen] = useState(false);
+  
+  const [tokenUsage, setTokenUsage] = useState<{
+    input_tokens: number | null;
+    output_tokens: number | null;
+    total_tokens: number | null;
+    cost_usd: number | null;
+  } | null>(null);
   
   // Mode selection dialog state
   const [showModeDialog, setShowModeDialog] = useState(false);
@@ -193,6 +200,7 @@ export default function TopicDetailPage() {
 
     setIsGenerating(true);
     setGeneratedCards([]);
+    setTokenUsage(null);
 
     try {
       const response = await apiClient.generateCards(deck.prompt, topic.name, {
@@ -201,6 +209,12 @@ export default function TopicDetailPage() {
         apiKey: apiKey,
       });
       setGeneratedCards(response.cards);
+      setTokenUsage({
+        input_tokens: response.input_tokens,
+        output_tokens: response.output_tokens,
+        total_tokens: response.total_tokens,
+        cost_usd: response.cost_usd,
+      });
     } catch (err: any) {
       toast.error(err.message || 'Failed to generate cards');
     } finally {
@@ -486,7 +500,10 @@ export default function TopicDetailPage() {
                         Loading...
                       </>
                     ) : (
-                      'Regenerate Cards'
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Regenerate Cards
+                      </>
                     )}
                   </Button>
                 </span>
@@ -503,7 +520,10 @@ export default function TopicDetailPage() {
               )}
             </Tooltip>
           </TooltipProvider>
-          <Button onClick={handleCreateCard}>Create Card</Button>
+          <Button onClick={handleCreateCard}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Card
+          </Button>
         </div>
       </div>
 
@@ -629,6 +649,28 @@ export default function TopicDetailPage() {
       {/* Generated Cards Preview */}
       {generatedCards.length > 0 && (
         <div className="space-y-3 mb-8">
+          {/* Token Usage and Cost Information */}
+          {tokenUsage && (tokenUsage.total_tokens !== null || tokenUsage.cost_usd !== null) && (
+            <div className="rounded-md border border-border bg-muted/30 px-4 py-3">
+              <div className="flex items-center justify-between text-sm">
+                {tokenUsage.total_tokens !== null && (
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Total tokens:</span>
+                    <span className="font-medium">{tokenUsage.total_tokens.toLocaleString()}</span>
+                  </div>
+                )}
+                {tokenUsage.cost_usd !== null && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Cost:</span>
+                    <span className="font-medium">${tokenUsage.cost_usd.toFixed(6)} USD</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <Label>Generated Cards ({generatedCards.length})</Label>
           <div className="space-y-2 overflow-y-auto border rounded-md p-3 max-h-[500px]">
             <TooltipProvider>
@@ -682,14 +724,14 @@ export default function TopicDetailPage() {
                   <CardContent className="px-3 py-0">
                     {card.card_type === 'qa_hint' ? (
                       <div className="text-sm text-muted-foreground space-y-1">
-                        <p><span className="font-medium">Answer:</span> <MarkdownRenderer content={card.answer || ''} className="inline" /></p>
+                        <div><span className="font-medium">Answer:</span> <MarkdownRenderer content={card.answer || ''} className="inline" /></div>
                         {card.hint && (
-                          <p><span className="font-medium">Hint:</span> <MarkdownRenderer content={card.hint} className="inline" /></p>
+                          <div><span className="font-medium">Hint:</span> <MarkdownRenderer content={card.hint} className="inline" /></div>
                         )}
                       </div>
                     ) : (
                       <div className="text-sm text-muted-foreground">
-                        <p className="font-medium mb-1">Choices:</p>
+                        <div className="font-medium mb-1">Choices:</div>
                         <ul className="list-decimal list-inside space-y-0.5">
                           {card.choices?.map((choice, choiceIndex) => (
                             <li key={choiceIndex} className={choiceIndex === card.correct_index ? 'text-green-600 font-medium' : ''}>
@@ -710,6 +752,7 @@ export default function TopicDetailPage() {
             disabled={generatedCards.length === 0 || isAddingCards}
             className="w-full"
           >
+            <Plus className="h-4 w-4 mr-2" />
             Add {generatedCards.length} Cards to Topic
           </Button>
         </div>
@@ -742,9 +785,22 @@ export default function TopicDetailPage() {
             action={
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleGenerateCards} disabled={isGenerating || !deck?.prompt}>
-                  {isGenerating ? 'Generating...' : 'Regenerate Cards'}
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Regenerate Cards
+                    </>
+                  )}
                 </Button>
-                <Button onClick={handleCreateCard}>Create Card Manually</Button>
+                <Button onClick={handleCreateCard}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Card Manually
+                </Button>
               </div>
             }
           />
@@ -821,6 +877,7 @@ export default function TopicDetailPage() {
                         size="sm"
                         onClick={() => handleEditCard(index, card)}
                       >
+                        <Pencil className="h-4 w-4 mr-2" />
                         Edit or Remove Card
                       </Button>
                     </div>
@@ -857,24 +914,24 @@ export default function TopicDetailPage() {
 
       {/* Mode selection dialog */}
       <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md max-w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Add Generated Cards</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Add Generated Cards</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               How would you like to add the {generatedCards.length} generated card{generatedCards.length !== 1 ? 's' : ''} to this topic?
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3 py-4">
+          <div className="flex flex-col gap-2 sm:gap-3 py-2 sm:py-4">
             <Button
               variant="outline"
               onClick={() => handleAddGeneratedCards('append')}
               disabled={isAddingCards}
-              className="justify-start h-auto py-3 px-4"
+              className="justify-start h-auto py-2 sm:py-3 px-3 sm:px-4"
             >
-              <div className="text-left">
-                <p className="font-medium">Append to existing cards</p>
-                <p className="text-sm text-muted-foreground">
-                  Keep current {topic?.cards.length || 0} card{(topic?.cards.length || 0) !== 1 ? 's' : ''} and add {generatedCards.length} new card{generatedCards.length !== 1 ? 's' : ''}
+              <div className="text-left w-full">
+                <p className="font-medium text-sm sm:text-base">Append to existing cards</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Keep {topic?.cards.length || 0} + add {generatedCards.length} new
                 </p>
               </div>
             </Button>
@@ -882,18 +939,18 @@ export default function TopicDetailPage() {
               variant="outline"
               onClick={() => handleAddGeneratedCards('replace')}
               disabled={isAddingCards}
-              className="justify-start h-auto py-3 px-4"
+              className="justify-start h-auto py-2 sm:py-3 px-3 sm:px-4"
             >
-              <div className="text-left">
-                <p className="font-medium">Replace all cards</p>
-                <p className="text-sm text-muted-foreground">
-                  Remove all existing cards and use only the {generatedCards.length} new card{generatedCards.length !== 1 ? 's' : ''}
+              <div className="text-left w-full">
+                <p className="font-medium text-sm sm:text-base">Replace all cards</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Remove existing, use only {generatedCards.length} new
                 </p>
               </div>
             </Button>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowModeDialog(false)} disabled={isAddingCards}>
+            <Button variant="ghost" onClick={() => setShowModeDialog(false)} disabled={isAddingCards} className="text-sm">
               Cancel
             </Button>
           </DialogFooter>
