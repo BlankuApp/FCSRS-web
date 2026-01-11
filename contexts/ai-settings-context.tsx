@@ -7,12 +7,8 @@ import { AI_PROVIDERS, DEFAULT_PROVIDER, getDefaultModel } from '@/lib/ai-provid
 interface AISettingsContextType {
   selectedProvider: AIProvider;
   selectedModel: string;
-  apiKey: string;
-  rememberApiKey: boolean;
   setSelectedProvider: (provider: AIProvider) => void;
   setSelectedModel: (model: string) => void;
-  setApiKey: (key: string) => void;
-  setRememberApiKey: (remember: boolean) => void;
 }
 
 const AISettingsContext = createContext<AISettingsContextType | undefined>(undefined);
@@ -42,22 +38,13 @@ export function AISettingsProvider({ children }: { children: ReactNode }) {
     return getDefaultModel(DEFAULT_PROVIDER);
   });
 
-  const [rememberApiKey, setRememberApiKeyState] = useState<boolean>(() => {
+  // Clean up legacy API key localStorage items
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('rememberApiKey') === 'true';
+      localStorage.removeItem('aiApiKey');
+      localStorage.removeItem('rememberApiKey');
     }
-    return false;
-  });
-
-  const [apiKey, setApiKeyState] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const remember = localStorage.getItem('rememberApiKey') === 'true';
-      if (remember) {
-        return localStorage.getItem('aiApiKey') || '';
-      }
-    }
-    return '';
-  });
+  }, []);
 
   const setSelectedProvider = (provider: AIProvider) => {
     setSelectedProviderState(provider);
@@ -76,36 +63,13 @@ export function AISettingsProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const setApiKey = (key: string) => {
-    setApiKeyState(key);
-    if (typeof window !== 'undefined' && rememberApiKey) {
-      localStorage.setItem('aiApiKey', key);
-    }
-  };
-
-  const setRememberApiKey = (remember: boolean) => {
-    setRememberApiKeyState(remember);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('rememberApiKey', remember.toString());
-      if (remember) {
-        localStorage.setItem('aiApiKey', apiKey);
-      } else {
-        localStorage.removeItem('aiApiKey');
-      }
-    }
-  };
-
   return (
     <AISettingsContext.Provider
       value={{
         selectedProvider,
         selectedModel,
-        apiKey,
-        rememberApiKey,
         setSelectedProvider,
         setSelectedModel,
-        setApiKey,
-        setRememberApiKey,
       }}
     >
       {children}

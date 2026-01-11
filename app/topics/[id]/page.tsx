@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Loader2, Trash2, Pencil, ArrowLeft, Check, X, Settings, Lock, Hash, DollarSign, Plus, Sparkles } from 'lucide-react';
+import { Loader2, Trash2, Pencil, ArrowLeft, Check, X, Settings, Hash, DollarSign, Plus, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import Loading from '@/components/loading';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,7 +19,6 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Checkbox } from '@/components/ui/checkbox';
 import EmptyState from '@/components/empty-state';
 import MarkdownRenderer from '@/components/markdown-renderer';
 import EditCardDialog, { GeneratedCard } from '@/components/edit-card-dialog';
@@ -89,21 +88,6 @@ export default function TopicDetailPage() {
       }
     }
     return getDefaultModel(DEFAULT_PROVIDER);
-  });
-  const [rememberApiKey, setRememberApiKey] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('rememberApiKey') === 'true';
-    }
-    return false;
-  });
-  const [apiKey, setApiKey] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const remember = localStorage.getItem('rememberApiKey') === 'true';
-      if (remember) {
-        return localStorage.getItem('aiApiKey') || '';
-      }
-    }
-    return '';
   });
 
   useEffect(() => {
@@ -180,23 +164,8 @@ export default function TopicDetailPage() {
   };
 
   // === Generated cards handlers ===
-  const isPremiumUser = role === 'admin' || role === 'pro';
-
-  // Reset provider to default for premium users
-  useEffect(() => {
-    if (isPremiumUser && selectedProvider !== DEFAULT_PROVIDER) {
-      setSelectedProvider(DEFAULT_PROVIDER);
-      setSelectedModel(getDefaultModel(DEFAULT_PROVIDER));
-    }
-  }, [isPremiumUser, selectedProvider]);
-
   const handleGenerateCards = async () => {
     if (!topic || !deck?.prompt) return;
-
-    if (!isPremiumUser && !apiKey.trim()) {
-      toast.error('Please enter your API key in the AI Settings');
-      return;
-    }
 
     setIsGenerating(true);
     setGeneratedCards([]);
@@ -206,7 +175,7 @@ export default function TopicDetailPage() {
       const response = await apiClient.generateCards(deck.prompt, topic.name, {
         provider: selectedProvider,
         model: selectedModel,
-        apiKey: apiKey,
+        apiKey: '',
       });
       setGeneratedCards(response.cards);
       setTokenUsage({
@@ -236,25 +205,6 @@ export default function TopicDetailPage() {
     setSelectedModel(model);
     if (typeof window !== 'undefined') {
       localStorage.setItem('aiModel', model);
-    }
-  };
-
-  const handleApiKeyChange = (value: string) => {
-    setApiKey(value);
-    if (typeof window !== 'undefined' && rememberApiKey) {
-      localStorage.setItem('aiApiKey', value);
-    }
-  };
-
-  const handleRememberApiKeyChange = (checked: boolean) => {
-    setRememberApiKey(checked);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('rememberApiKey', checked.toString());
-      if (checked) {
-        localStorage.setItem('aiApiKey', apiKey);
-      } else {
-        localStorage.removeItem('aiApiKey');
-      }
     }
   };
 
@@ -487,7 +437,7 @@ export default function TopicDetailPage() {
                   <Button
                     variant="outline"
                     onClick={handleGenerateCards}
-                    disabled={isGenerating || isDeckLoading || !deck?.prompt || (!isPremiumUser && !apiKey.trim())}
+                    disabled={isGenerating || isDeckLoading || !deck?.prompt}
                   >
                     {isGenerating ? (
                       <>
@@ -513,11 +463,6 @@ export default function TopicDetailPage() {
                   <p>Deck prompt is required for card generation</p>
                 </TooltipContent>
               )}
-              {!isPremiumUser && !isDeckLoading && deck?.prompt && !apiKey.trim() && (
-                <TooltipContent>
-                  <p>API key required - configure in AI Settings below</p>
-                </TooltipContent>
-              )}
             </Tooltip>
           </TooltipProvider>
           <Button onClick={handleCreateCard}>
@@ -537,13 +482,9 @@ export default function TopicDetailPage() {
               </div>
               <div className="flex flex-col items-start gap-0.5">
                 <span className="text-sm font-medium">AI Settings</span>
-                {!isPremiumUser && !apiKey.trim() ? (
-                  <span className="text-xs text-destructive">API key required</span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    {AI_PROVIDERS[selectedProvider].displayName} · {AI_PROVIDERS[selectedProvider].models.find(m => m.id === selectedModel)?.name || selectedModel}
-                  </span>
-                )}
+                <span className="text-xs text-muted-foreground">
+                  {AI_PROVIDERS[selectedProvider].displayName} · {AI_PROVIDERS[selectedProvider].models.find(m => m.id === selectedModel)?.name || selectedModel}
+                </span>
               </div>
             </div>
           </AccordionTrigger>
@@ -564,7 +505,6 @@ export default function TopicDetailPage() {
                         key={provider} 
                         value={provider} 
                         className="text-xs"
-                        disabled={isPremiumUser && provider !== DEFAULT_PROVIDER}
                       >
                         {AI_PROVIDERS[provider].displayName}
                       </SelectItem>
@@ -588,41 +528,6 @@ export default function TopicDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
-              {!isPremiumUser && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="apiKey"
-                      type="text"
-                      value={apiKey}
-                      onChange={(e) => handleApiKeyChange(e.target.value)}
-                      placeholder={`${AI_PROVIDERS[selectedProvider].displayName} API key`}
-                      disabled={isGenerating}
-                      autoComplete="on"
-                      className="h-8 text-xs flex-1"
-                    />
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Checkbox
-                        id="rememberApiKey"
-                        checked={rememberApiKey}
-                        onCheckedChange={handleRememberApiKeyChange}
-                        disabled={isGenerating}
-                        className="h-3.5 w-3.5"
-                      />
-                      <Label
-                        htmlFor="rememberApiKey"
-                        className="text-[11px] cursor-pointer flex items-center gap-1 m-0"
-                      >
-                        <Lock className="h-3 w-3" />
-                        Remember
-                      </Label>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-tight">
-                    Your API key is stored locally and never sent to our servers.
-                  </p>
-                </>
-              )}
             </div>
           </AccordionContent>
         </AccordionItem>
