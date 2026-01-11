@@ -18,7 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { apiClient } from '@/lib/api-client';
 import { UserInfo, UserListResponse } from '@/lib/types';
 
-type SortField = 'email' | 'username' | 'role' | 'created_at';
+type SortField = 'email' | 'name' | 'role' | 'created_at';
 type SortOrder = 'asc' | 'desc';
 
 export default function AdminUsersPage() {
@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search by email or username..."
+              placeholder="Search by email or name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"

@@ -53,16 +53,24 @@ export default function AuthCallbackPage() {
             
             const updateData: any = {};
             
-            if (googleName && !data.user.user_metadata?.username) {
-              updateData.username = googleName;
+            if (googleName && !data.user.user_metadata?.name) {
+              updateData.name = googleName;
             }
             
-            if (googleAvatar && !data.user.user_metadata?.avatar) {
-              updateData.avatar = googleAvatar;
+            if (googleAvatar && !data.user.user_metadata?.avatar_url) {
+              updateData.avatar_url = googleAvatar;
             }
             
             if (!data.user.user_metadata?.role) {
               updateData.role = 'user';
+            }
+
+            if (data.user.user_metadata?.credits === null || data.user.user_metadata?.credits === undefined) {
+              updateData.credits = 2.0;
+            }
+
+            if (data.user.user_metadata?.total_spent === null || data.user.user_metadata?.total_spent === undefined) {
+              updateData.total_spent = 0.0;
             }
 
             if (Object.keys(updateData).length > 0) {
@@ -95,16 +103,24 @@ export default function AuthCallbackPage() {
             
             const updateData: any = {};
             
-            if (googleName && !data.user.user_metadata?.username) {
-              updateData.username = googleName;
+            if (googleName && !data.user.user_metadata?.name) {
+              updateData.name = googleName;
             }
             
-            if (googleAvatar && !data.user.user_metadata?.avatar) {
-              updateData.avatar = googleAvatar;
+            if (googleAvatar && !data.user.user_metadata?.avatar_url) {
+              updateData.avatar_url = googleAvatar;
             }
             
             if (!data.user.user_metadata?.role) {
               updateData.role = 'user';
+            }
+            
+            if (data.user.user_metadata?.credits === null || data.user.user_metadata?.credits === undefined) {
+              updateData.credits = 2.0;
+            }
+            
+            if (data.user.user_metadata?.total_spent === null || data.user.user_metadata?.total_spent === undefined) {
+              updateData.total_spent = 0.0;
             }
 
             if (Object.keys(updateData).length > 0) {

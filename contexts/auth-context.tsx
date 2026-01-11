@@ -9,16 +9,16 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  username: string;
-  avatar: string;
+  name: string;
+  avatar_url: string;
   role: 'user' | 'admin' | 'pro';
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
-  updateProfile: (username: string, avatar: string) => Promise<void>;
+  updateProfile: (name: string, avatar_url: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,17 +70,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, username: string) => {
+  const signUp = useCallback(async (email: string, password: string, name: string) => {
     const randomNumber = Math.floor(Math.random() * 100) + 1;
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          username,
-          avatar: `https://avatar.iran.liara.run/public/${randomNumber}`,
+          name,
+          avatar_url: `https://avatar.iran.liara.run/public/${randomNumber}`,
           role: 'user',
-          credits: 1.0,
+          credits: 2.0,
           total_spent: 0.0,
         },
       },
@@ -126,18 +126,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   }, []);
 
-  const updateProfile = useCallback(async (username: string, avatar: string) => {
+  const updateProfile = useCallback(async (name: string, avatar_url: string) => {
     const { error } = await supabase.auth.updateUser({
       data: {
-        username,
-        avatar,
+        name,
+        avatar_url,
       },
     });
     if (error) throw error;
   }, []);
 
-  const username = user?.user_metadata?.username ?? 'User';
-  const avatar = user?.user_metadata?.avatar ?? '';
+  const name = user?.user_metadata?.name ?? 'User';
+  const avatar_url = user?.user_metadata?.avatar_url ?? '';
   const role = (user?.user_metadata?.role ?? 'user') as 'user' | 'admin' | 'pro';
 
   const value = useMemo(
@@ -145,8 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       session,
       loading,
-      username,
-      avatar,
+      name,
+      avatar_url,
       role,
       signUp,
       signIn,
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updatePassword,
       updateProfile,
     }),
-    [user, session, loading, username, avatar, role, signUp, signIn, signInWithGoogle, signOut, resetPassword, updatePassword, updateProfile]
+    [user, session, loading, name, avatar_url, role, signUp, signIn, signInWithGoogle, signOut, resetPassword, updatePassword, updateProfile]
   );
 
   return (

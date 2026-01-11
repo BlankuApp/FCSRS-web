@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { User, Mail, Calendar, Coins, TrendingUp, Shield, Pencil, Check, X } from 'lucide-react';
 import Loading from '@/components/loading';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,13 +12,13 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function ProfilePage() {
-  const { user, username, avatar, role, loading: authLoading, updateProfile } = useAuth();
+  const { user, name, avatar_url, role, loading: authLoading, updateProfile } = useAuth();
   const router = useRouter();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ username: '', avatar: '' });
+  const [formData, setFormData] = useState({ name: '', avatar_url: '' });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -26,10 +27,10 @@ export default function ProfilePage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (username && avatar !== undefined) {
-      setFormData({ username, avatar });
+    if (name && avatar_url !== undefined) {
+      setFormData({ name, avatar_url });
     }
-  }, [username, avatar]);
+  }, [name, avatar_url]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +39,7 @@ export default function ProfilePage() {
     setSuccess('');
 
     try {
-      await updateProfile(formData.username, formData.avatar);
+      await updateProfile(formData.name, formData.avatar_url);
       setEditing(false);
       setSuccess('Profile updated successfully!');
       setTimeout(() => setSuccess(''), 3000);
@@ -50,7 +51,7 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    setFormData({ username, avatar });
+    setFormData({ name, avatar_url });
     setEditing(false);
     setError('');
   };
@@ -90,8 +91,8 @@ export default function ProfilePage() {
                   <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="johndoe"
                     required
                     minLength={3}
@@ -106,17 +107,19 @@ export default function ProfilePage() {
                   <Input
                     id="avatar"
                     type="url"
-                    value={formData.avatar}
-                    onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+                    value={formData.avatar_url}
+                    onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
                     placeholder="https://example.com/avatar.jpg"
                     disabled={submitting}
                   />
                 </div>
                 <div className="flex gap-2">
                   <Button type="submit" disabled={submitting}>
+                    <Check className="h-4 w-4 mr-2" />
                     {submitting ? 'Saving...' : 'Save Changes'}
                   </Button>
                   <Button type="button" variant="outline" onClick={handleCancel} disabled={submitting}>
+                    <X className="h-4 w-4 mr-2" />
                     Cancel
                   </Button>
                 </div>
@@ -124,50 +127,67 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center gap-4 mb-6">
-                  {avatar ? (
+                  {avatar_url ? (
                     <img 
-                      src={avatar} 
+                      src={avatar_url} 
                       alt="Avatar" 
                       className="w-20 h-20 rounded-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&size=80`;
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=80`;
                       }}
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
-                      <span className="text-2xl font-bold">{username[0]?.toUpperCase()}</span>
+                      <User className="h-10 w-10 text-muted-foreground" />
                     </div>
                   )}
                   <div>
-                    <h3 className="text-xl font-semibold">{username}</h3>
-                    <p className="text-sm text-muted-foreground capitalize">{role}</p>
+                    <h3 className="text-xl font-semibold">{name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Shield className="h-4 w-4" />
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize
+                        ${role === 'admin' ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' : 
+                          role === 'pro' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300' : 
+                          'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'}`}>
+                        {role}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-muted-foreground">Email</Label>
-                    <p className="font-medium">{user?.email}</p>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-muted-foreground">Email</Label>
+                    </div>
+                    <p className="font-medium mt-1">{user?.email}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">User ID</Label>
-                    <p className="font-mono text-sm">{user?.id}</p>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-muted-foreground">Member Since</Label>
+                    </div>
+                    <p className="mt-1">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Member Since</Label>
-                    <p>{user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</p>
+                    <div className="flex items-center gap-2">
+                      <Coins className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-muted-foreground">Credits Balance</Label>
+                    </div>
+                    <p className="font-mono mt-1">{(user?.user_metadata?.credits ?? 0).toFixed(6)} USD</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Credits Balance</Label>
-                    <p className="font-mono">{(user?.user_metadata?.credits ?? 0).toFixed(6)} credits</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Total Spent</Label>
-                    <p className="font-mono">{(user?.user_metadata?.total_spent ?? 0).toFixed(6)} credits</p>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-muted-foreground">Total Spent</Label>
+                    </div>
+                    <p className="font-mono mt-1">{(user?.user_metadata?.total_spent ?? 0).toFixed(6)} USD</p>
                   </div>
                 </div>
 
                 <Button onClick={() => setEditing(true)} className="mt-4">
+                  <Pencil className="h-4 w-4 mr-2" />
                   Edit Profile
                 </Button>
               </div>

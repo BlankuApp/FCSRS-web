@@ -219,7 +219,7 @@ class ApiClient {
   async listUsers(params?: {
     page?: number;
     page_size?: number;
-    sort_by?: 'email' | 'username' | 'role' | 'created_at';
+    sort_by?: 'email' | 'name' | 'role' | 'created_at';
     sort_order?: 'asc' | 'desc';
     role?: 'user' | 'pro' | 'admin';
     search?: string;

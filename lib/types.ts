@@ -207,8 +207,8 @@ export interface GenerateCardsResponse {
 export interface UserInfo {
   id: string;
   email: string;
-  username: string;
-  avatar: string | null;
+  name: string;
+  avatar_url: string | null;
   role: 'user' | 'pro' | 'admin';
   credits: number | null;
   total_spent: number | null;

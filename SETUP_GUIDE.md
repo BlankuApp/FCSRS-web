@@ -59,7 +59,7 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## First-Time Usage
 
-1. **Sign Up**: Navigate to signup page, create an account and enter your username
+1. **Sign Up**: Navigate to signup page, create an account and enter your name
 2. **Dashboard**: After signup, you'll be directed to your dashboard
 3. **Create Deck**: Go to "Decks" and create your first deck
 4. **Add Topics**: Within a deck, create topics to organize cards

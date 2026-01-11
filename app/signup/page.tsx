@@ -15,7 +15,7 @@ import { Mail, Lock, User, Eye, EyeOff, Sparkles, Brain, BarChart3 } from 'lucid
 import Loading from '@/components/loading';
 
 const signupSchema = z.object({
-  username: z
+  name: z
     .string()
     .min(3, 'Username must be at least 3 characters')
     .max(50, 'Username must be at most 50 characters')
@@ -35,7 +35,7 @@ export default function SignUpPage() {
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      username: '',
+      name: '',
       email: '',
       password: '',
     },
@@ -49,7 +49,7 @@ export default function SignUpPage() {
 
   const onSubmit = async (data: SignupFormValues) => {
     try {
-      await signUp(data.email, data.password, data.username);
+      await signUp(data.email, data.password, data.name);
       await signIn(data.email, data.password);
       router.push('/dashboard');
     } catch (err: any) {
@@ -170,7 +170,7 @@ export default function SignUpPage() {
 
                   <FormField
                     control={form.control}
-                    name="username"
+                    name="name"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Username</FormLabel>
