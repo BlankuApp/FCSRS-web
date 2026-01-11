@@ -10,8 +10,10 @@ import { useAISettings } from '@/contexts/ai-settings-context';
 import { useAuth } from '@/contexts/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AI_PROVIDERS } from '@/lib/ai-providers';
+import { AIProvider } from '@/lib/types';
 import Loading from '@/components/loading';
-import AIProviderSettings from '@/components/ai-provider-settings';
 import GeneratedCardsList from '@/components/generated-cards-list';
 import EditGeneratedCardDialog from '@/components/edit-generated-card-dialog';
 
@@ -29,7 +31,7 @@ export default function CreateTopicPage() {
   const { deck, deckId } = useDeck();
   const { role } = useAuth();
   const router = useRouter();
-  const { selectedProvider, selectedModel } = useAISettings();
+  const { selectedProvider, selectedModel, setSelectedProvider, setSelectedModel } = useAISettings();
 
   const [topicName, setTopicName] = useState('');
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
@@ -165,9 +167,6 @@ export default function CreateTopicPage() {
 
   return (
     <div className="space-y-4">
-      {/* AI Settings Accordion */}
-      <AIProviderSettings disabled={isGenerating || isAdding} />
-
       <div className="space-y-2">
         <div className="relative">
           <TextareaAutosize
@@ -177,9 +176,41 @@ export default function CreateTopicPage() {
             placeholder="e.g., Present Tense Verbs"
             maxLength={500}
             disabled={isGenerating || isAdding}
-            className="field-sizing-content min-h-32 w-full resize-none rounded-md border border-input bg-transparent px-3 py-2.5 pb-14 text-base transition-[color,box-shadow] outline-none md:text-sm placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+            className="field-sizing-content min-h-32 w-full resize-none rounded-md border border-input bg-transparent px-3 py-2.5 pb-12 text-base transition-[color,box-shadow] outline-none md:text-sm placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
           />
-          <div className="absolute bottom-3 right-3 flex items-center gap-3">
+          <div className="absolute bottom-3 right-3 left-3 flex flex-wrap items-center gap-1.5">
+            <Select
+              value={selectedProvider}
+              onValueChange={(value) => setSelectedProvider(value as AIProvider)}
+              disabled={isGenerating || isAdding}
+            >
+              <SelectTrigger className="h-8 text-xs min-w-[110px] w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(AI_PROVIDERS).map(([key, config]) => (
+                  <SelectItem key={key} value={key} className="text-xs">
+                    {config.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedModel}
+              onValueChange={setSelectedModel}
+              disabled={isGenerating || isAdding}
+            >
+              <SelectTrigger className="h-8 text-xs min-w-[130px] w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AI_PROVIDERS[selectedProvider]?.models.map((model) => (
+                  <SelectItem key={model.id} value={model.id} className="text-xs">
+                    {model.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <span className="text-xs text-muted-foreground">
               {topicName.length}/500
             </span>
@@ -188,6 +219,7 @@ export default function CreateTopicPage() {
               onClick={handleGenerateCards}
               disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt}
               size="sm"
+              className="sm:ml-auto"
             >
               {isGenerating ? (
                 <>
