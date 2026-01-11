@@ -336,7 +336,6 @@ interface GenerateCardsRequest {
   topic_name: string;            // Required, topic name to generate cards for
   provider: AIProvider;          // Required, AI provider to use
   model: string;                 // Required, model ID to use
-  api_key?: string;              // Optional, if empty and user is pro/admin, uses server-side key
 }
 
 // Generated Card
@@ -1367,10 +1366,10 @@ Generate flashcards using AI
 
 **Request Body:** `GenerateCardsRequest`
 
-**API Key Behavior:**
-- If `api_key` is provided (non-empty string), it will be used for the AI request.
-- If `api_key` is empty/omitted and user role is `'pro'` or `'admin'`, the server-side API key from environment variables is used.
-- If `api_key` is empty/omitted and user role is `'user'`, returns `403 Forbidden`.
+**How It Works:**
+- All requests use server-side API keys configured in the backend environment variables
+- No client-side API keys are required or accepted
+- All users (user, pro, admin) have the same interface and capabilities
 
 **Credits System:**
 - User must have `credits > 0.0` to generate cards
@@ -1386,8 +1385,7 @@ Body: {
   deck_prompt: "You are a helpful assistant creating flashcards for learning TypeScript...",
   topic_name: "TypeScript Generics",
   provider: "openai",
-  model: "gpt-4o-mini",
-  api_key: "sk-..." // Optional for pro/admin users
+  model: "gpt-4o-mini"
 }
 ```
 
@@ -1439,7 +1437,6 @@ If token usage data is not available from the AI provider, these fields will be 
 - `400` - Validation error, invalid provider/model, or AI provider API error
 - `401` - Unauthorized
 - `402` - Payment Required (insufficient credits, user must contact admin to add credits)
-- `403` - API key required (user role is 'user' and no api_key provided)
 - `500` - Server-side API key not configured, or AI response parsing error
 
 **Supported Providers:**

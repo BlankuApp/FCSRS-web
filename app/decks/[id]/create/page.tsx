@@ -29,7 +29,7 @@ export default function CreateTopicPage() {
   const { deck, deckId } = useDeck();
   const { role } = useAuth();
   const router = useRouter();
-  const { selectedProvider, selectedModel, apiKey } = useAISettings();
+  const { selectedProvider, selectedModel } = useAISettings();
 
   const [topicName, setTopicName] = useState('');
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
@@ -46,8 +46,6 @@ export default function CreateTopicPage() {
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  const isPremiumUser = role === 'admin' || role === 'pro';
-
   // Redirect if no prompt
   useEffect(() => {
     if (deck && !deck.prompt) {
@@ -59,11 +57,6 @@ export default function CreateTopicPage() {
   const handleGenerateCards = async () => {
     if (!topicName.trim() || !deck) return;
 
-    if (!isPremiumUser && !apiKey.trim()) {
-      toast.error('Please enter your API key in the AI Settings');
-      return;
-    }
-
     setIsGenerating(true);
     setGeneratedCards([]);
     setTokenUsage(null);
@@ -72,7 +65,7 @@ export default function CreateTopicPage() {
       const response = await apiClient.generateCards(deck.prompt, topicName, {
         provider: selectedProvider,
         model: selectedModel,
-        apiKey: apiKey,
+        apiKey: '',
       });
       setGeneratedCards(response.cards);
       setTokenUsage({
@@ -89,7 +82,7 @@ export default function CreateTopicPage() {
   };
 
   const handleTopicNameKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && topicName.trim() && !isGenerating && !isAdding && deck?.prompt && (isPremiumUser || apiKey.trim())) {
+    if (e.key === 'Enter' && !e.shiftKey && topicName.trim() && !isGenerating && !isAdding && deck?.prompt) {
       e.preventDefault();
       handleGenerateCards();
     }
@@ -193,7 +186,7 @@ export default function CreateTopicPage() {
             <Button
               type="button"
               onClick={handleGenerateCards}
-              disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt || (!isPremiumUser && !apiKey.trim())}
+              disabled={!topicName.trim() || isGenerating || isAdding || !deck?.prompt}
               size="sm"
             >
               {isGenerating ? (
