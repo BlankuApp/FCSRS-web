@@ -35,6 +35,7 @@ Edit `.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_SUPABASE_URL=https://mlubbzyctgiafjbiqyfo.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ACTUAL_SUPABASE_ANON_KEY_HERE
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ⚠️ **Important**: Replace `YOUR_ACTUAL_SUPABASE_ANON_KEY_HERE` with your real Supabase anonymous key!
