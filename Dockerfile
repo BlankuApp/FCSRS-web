@@ -16,12 +16,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build arguments for NEXT_PUBLIC_* environment variables
+# These can be passed at build time or use defaults
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_APP_URL
 
 # Set environment variables for build
+# Note: For Cloud Run, these should be passed as build args via --build-arg
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY

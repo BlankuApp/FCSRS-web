@@ -1,0 +1,41 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_SUPABASE_URL=${_NEXT_PUBLIC_SUPABASE_URL}'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_SUPABASE_ANON_KEY=${_NEXT_PUBLIC_SUPABASE_ANON_KEY}'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/fcsrsr-web:$BUILD_ID'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/fcsrsr-web:$BUILD_ID']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'fcsrsr-web'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/fcsrsr-web:$BUILD_ID'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--env-vars-file'
+      - '.env.yaml'
+
+substitutions:
+  _NEXT_PUBLIC_API_URL: 'https://your-api-url.com'
+  _NEXT_PUBLIC_APP_URL: 'https://fcsrsr-web-<your-hash>.run.app'
+  _NEXT_PUBLIC_SUPABASE_URL: 'https://mlubbzyctgiafjbiqyfo.supabase.co'
+  _NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sdWJienljdGdpYWZqYmlxeWZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzY1NzEsImV4cCI6MjA4MTYxMjU3MX0.XXU8EWfX7469QUhRnAGZaT_bAkdblOcdhIcLPArmcOc'
+
+images:
+  - 'gcr.io/$PROJECT_ID/fcsrsr-web:$BUILD_ID'
