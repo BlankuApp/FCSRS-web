@@ -15,19 +15,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build arguments for NEXT_PUBLIC_* environment variables
-# These can be passed at build time or use defaults
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_APP_URL
-
-# Set environment variables for build
-# Note: For Cloud Run, these should be passed as build args via --build-arg
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+# Set environment variables for build (hardcoded for simplicity)
+# Update these values for your production environment
+ENV NEXT_PUBLIC_API_URL="http://localhost:8000"
+ENV NEXT_PUBLIC_APP_URL="http://localhost:3000"
+ENV NEXT_PUBLIC_SUPABASE_URL="https://mlubbzyctgiafjbiqyfo.supabase.co"
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sdWJienljdGdpYWZqYmlxeWZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMzY1NzEsImV4cCI6MjA4MTYxMjU3MX0.XXU8EWfX7469QUhRnAGZaT_bAkdblOcdhIcLPArmcOc"
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build Next.js app in standalone mode
